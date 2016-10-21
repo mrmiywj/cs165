@@ -1,0 +1,6 @@
+**.DS_Store
+.DS_Store
+**.o
+src/.deps/**
+src/server
+src/client
