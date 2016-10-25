@@ -8,29 +8,30 @@
 #include <errno.h>
 
 // creates a specified directory recursively
-int createDirectory(const char *path) {
+int createDirectory(const char* path) {
+    // create copy of path
     char tmp[MAX_SIZE_NAME * 2];
-
     snprintf(tmp, sizeof(tmp), "%s", path);
     size_t len = strlen(tmp);
 
+    // chop off last '/'
     if (tmp[len - 1] == '/') {
         tmp[len - 1] = 0;
     }
+
+    // iterate down string
     for (char* p = tmp + 1; *p; p++) {
-        if (*p == '/') {
+        bool isSlash = (*p == '/');
+        if (isSlash)
             *p = 0;
-            mkdir(tmp, USER_PERM);
+        mkdir(tmp, USER_PERM);
+        if (isSlash) 
             *p = '/';
-        }
-        if (*p == 0) {
-            mkdir(tmp, USER_PERM);
-        }
     }
     return 0;
 }
 // creates a specified file
-int createFile(char* dir, char* file) {
+int createFile(const char* dir, const char* file) {
     // check directory for existence
     struct stat st;
     if (stat(dir, &st) != -1) {
@@ -49,21 +50,21 @@ int createFile(char* dir, char* file) {
 }
 
 // creates a database folder
-int createDatabase(char* name) {
+int createDatabase(const char* name) {
     int pathLength = DATA_PATH_LENGTH + strlen(name) + 1;
     char path[pathLength];
     sprintf(path, "%s%s", DATA_PATH, name);
     return createDirectory(path);
 }
 // creates a table folder
-int createTable(char* db, char* name) {
+int createTable(const char* db, const char* name) {
     int pathLength = DATA_PATH_LENGTH + strlen(db) + strlen(name) + 2;
     char path[pathLength];
     sprintf(path, "%s%s/%s", DATA_PATH, db, name);
     return createDirectory(path);
 }
 // creates a column file
-int createColumn(char* db, char* table, char* name) {
+int createColumn(const char* db, const char* table, const char* name) {
     int pathLength = DATA_PATH_LENGTH + strlen(db) + strlen(table) + 2;
     char path[pathLength];
     sprintf(path, "%s%s/%s", DATA_PATH, db, name);
@@ -71,10 +72,10 @@ int createColumn(char* db, char* table, char* name) {
 }
 
 char** getDbs();
-char** getTables(char* db);
-char** getColumns(char* db, char* table);
+char** getTables(const char* db);
+char** getColumns(const char* db, const char* table);
 
-Table* loadTable(char* db, char* table);
-size_t* loadColumn(char* db, char* table, char* column);
+Table* loadTable(const char* db, const char* table);
+size_t* loadColumn(const char* db, const char* table, const char* column);
 
 DbCatalog loadCatalog();

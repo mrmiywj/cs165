@@ -9,16 +9,16 @@
 #include "cs165_api.h"
 #include "db_catalog.h"
 
-int createDatabase(char* name);
-int createTable(char* db, char* name);
-int createColumn(char* db, char* table, char* name);
+int createDatabase(const char* name);
+int createTable(const char* db, const char* name);
+int createColumn(const char* db, const char* table, const char* name);
 
 char** getDbs();
-char** getTables(char* db);
-char** getColumns(char* db, char* table);
+char** getTables(const char* db);
+char** getColumns(const char* db, const char* table);
 
-Table* loadTable(char* db, char* table);
-size_t* loadColumn(char* db, char* table, char* column);
+Table* loadTable(const char* db, const char* table);
+size_t* loadColumn(const char* db, const char* table, const char* column);
 
 DbCatalog loadCatalog();
 

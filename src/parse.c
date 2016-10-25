@@ -165,7 +165,7 @@ DbOperator* parse_insert(char* query_command, message* send_message) {
         // check that we received the correct number of input values
         if (columns_inserted != insert_table->col_count) {
             send_message->status = INCORRECT_FORMAT;
-            free (dbo);
+            free(dbo);
             return NULL;
         } 
         return dbo;

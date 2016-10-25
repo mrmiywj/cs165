@@ -31,7 +31,7 @@ void printDbOperator(DbOperator* query) {
                 /* DbOperator.operator_fields.insert_operator.values */
                 log_info("\tInsert Values: [ ");
                 if (fields.insert_operator.values != NULL) {
-                    for (int i = 0; i < sizeof(fields.insert_operator.values) / sizeof(int); i++) {
+                    for (size_t i = 0; i < sizeof(fields.insert_operator.values) / sizeof(int); i++) {
                         log_info("%i ", fields.insert_operator.values[i]);
                     }
                 }
