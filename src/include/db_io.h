@@ -4,6 +4,8 @@
 #define DATA_PATH "./data/"
 #define DATA_PATH_LENGTH 7
 
+#define USER_PERM S_IRWXU
+
 #include "cs165_api.h"
 #include "db_catalog.h"
 
@@ -12,12 +14,13 @@ typedef enum DbIOResult {
     NOTFOUND = 1,
     BADPERM = 2,
     EXISTS = 4,
-    RUNTIME = 8
+    NOEXIST = 8,
+    RUNTIME = 16
 } DbIOError;
 
-DbIOResult createDatabase(char* name);
-DbIOResult createTable(char* name);
-DbIOResult createColumn(char* db, char* table, char* name);
+enum DbIOResult createDatabase(char* name);
+enum DbIOResult createTable(char* db, char* name);
+enum DbIOResult createColumn(char* db, char* table, char* name);
 
 char** getDbs();
 char** getTables(char* db);

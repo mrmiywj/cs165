@@ -5,7 +5,7 @@
 
 // database catalog file
 typedef struct DbCatalog {
-    char db_name[MAX_SIZE_NAME;         // name of active database
+    char db_name[MAX_SIZE_NAME];        // name of active database
     size_t table_count;                 // number of tables in database
     Table* tables;                      // tables
 } DbCatalog;
