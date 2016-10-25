@@ -29,6 +29,8 @@
 #include "utils.h"
 #include "client_context.h"
 
+#include "debug_utils.h"
+
 #define DEFAULT_QUERY_BUFFER_SIZE 1024
 
 /** execute_DbOperator takes as input the DbOperator and executes the query.
@@ -36,8 +38,12 @@
  * It is currently here so that you can verify that your server and client can send messages.
  **/
 char* execute_DbOperator(DbOperator* query) {
+    if (query == NULL) {
+        return "We couldn't parse your request; please try again!";
+    }
+    printDbOperator(query);
     free(query);
-    return "165";
+    return "Parsed query...";
 }
 
 /**

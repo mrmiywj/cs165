@@ -9,7 +9,7 @@ all: client server
 CC = gcc -std=c99 -g -ggdb3
 
 # Default optimization level
-O ?= 3
+O ?= 0
 
 # Flags and other libraries
 override CFLAGS += -Wall -Wextra -pedantic -pthread -O$(O) -I$(INCLUDES)
@@ -51,10 +51,10 @@ $(DEPSDIR)/stamp $(BUILDSTAMP):
 # dependency on the right side of whichever one requires the file.
 ##
 
-client: client.o utils.o
+client: client.o utils.o debug_utils.o
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
-server: server.o parse.o utils.o db_manager.o client_context.o
+server: server.o parse.o utils.o db_manager.o client_context.o debug_utils.o
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 clean:
