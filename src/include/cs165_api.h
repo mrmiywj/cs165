@@ -77,7 +77,7 @@ typedef struct Column {
 
 typedef struct Table {
     char name [MAX_SIZE_NAME];
-    Column *columns;
+    Column** columns;
     size_t col_count;
     size_t table_length;
 } Table;
@@ -93,11 +93,11 @@ typedef struct Table {
 
 typedef struct Db {
     char name[MAX_SIZE_NAME]; 
-    Table *tables;
+    Table** tables;
     size_t tables_size;
     size_t tables_capacity;
 } Db;
-
+ 
 /**
  * Error codes used to indicate the outcome of an API call
  **/

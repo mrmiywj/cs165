@@ -10,4 +10,9 @@ typedef struct DbCatalog {
     Table* tables;                      // tables
 } DbCatalog;
 
+// frees a table object
+void freeTable(Table* tbl);
+// frees a database object
+void freeDb(Db* db);
+
 #endif
