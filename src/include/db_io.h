@@ -9,18 +9,9 @@
 #include "cs165_api.h"
 #include "db_catalog.h"
 
-typedef enum DbIOResult {
-    SUCCESS = 0,
-    NOTFOUND = 1,
-    BADPERM = 2,
-    EXISTS = 4,
-    NOEXIST = 8,
-    RUNTIME = 16
-} DbIOError;
-
-enum DbIOResult createDatabase(char* name);
-enum DbIOResult createTable(char* db, char* name);
-enum DbIOResult createColumn(char* db, char* table, char* name);
+int createDatabase(char* name);
+int createTable(char* db, char* name);
+int createColumn(char* db, char* table, char* name);
 
 char** getDbs();
 char** getTables(char* db);

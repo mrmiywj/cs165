@@ -5,9 +5,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 // creates a specified directory recursively
-enum DbIOResult createDirectory(const char *path) {
+int createDirectory(const char *path) {
     char tmp[MAX_SIZE_NAME * 2];
 
     snprintf(tmp, sizeof(tmp), "%s", path);
@@ -26,52 +27,46 @@ enum DbIOResult createDirectory(const char *path) {
             mkdir(tmp, USER_PERM);
         }
     }
-    return SUCCESS;
+    return 0;
 }
 // creates a specified file
-enum DbIOResult createFile(char* dir, char* file) {
+int createFile(char* dir, char* file) {
     // check directory for existence
-    struct stat st = {0};
+    struct stat st;
     if (stat(dir, &st) != -1) {
-        return NOEXIST;
+        return ENOENT;
     }
-    char* filePath[MAX_SIZE_NAME * 3 + 2];
+    char filePath[MAX_SIZE_NAME * 3 + 2];
     snprintf(filePath, strlen(dir) + 1 + strlen(file), "%s/%s", dir, file);
     printf("Creating file at %s...\n", filePath);
 
     FILE* fp = fopen(filePath, "rb+");
     if (fp == NULL) {
-        return RUNTIME;
+        return errno;
     }
     fclose(fp);
-    return SUCCESS;
+    return 0;
 }
 
 // creates a database folder
-enum DbIOResult createDatabase(char* name) {
+int createDatabase(char* name) {
     int pathLength = DATA_PATH_LENGTH + strlen(name) + 1;
     char path[pathLength];
-    if (snprintf(path, pathLength, "%s%s", DATA_PATH, name) != pathLength) {
-        return RUNTIME;
-    }
+    sprintf(path, "%s%s", DATA_PATH, name);
     return createDirectory(path);
 }
 // creates a table folder
-enum DbIOResult createTable(char* db, char* name) {
+int createTable(char* db, char* name) {
     int pathLength = DATA_PATH_LENGTH + strlen(db) + strlen(name) + 2;
     char path[pathLength];
-    if (snprintf(path, pathLength, "%s%s/%s", DATA_PATH, db, name) != pathLength) {
-        return RUNTIME;
-    }
+    sprintf(path, "%s%s/%s", DATA_PATH, db, name);
     return createDirectory(path);
 }
 // creates a column file
-enum DbIOResult createColumn(char* db, char* table, char* name) {
+int createColumn(char* db, char* table, char* name) {
     int pathLength = DATA_PATH_LENGTH + strlen(db) + strlen(table) + 2;
     char path[pathLength];
-    if (snprintf(path, pathLength, "%s%s/%s", DATA_PATH, db, table) != pathLength) {
-        return RUNTIME;
-    }
+    sprintf(path, "%s%s/%s", DATA_PATH, db, name);
     return createFile(path, name);
 }
 
