@@ -1,6 +1,9 @@
 #ifndef DB_IO_H
 #define DB_IO_H
 
+#define DATA_PATH "./data/"
+#define DATA_PATH_LENGTH 7
+
 #include "cs165_api.h"
 #include "db_catalog.h"
 
@@ -8,7 +11,8 @@ typedef enum DbIOResult {
     SUCCESS = 0,
     NOTFOUND = 1,
     BADPERM = 2,
-    EXISTS = 4
+    EXISTS = 4,
+    RUNTIME = 8
 } DbIOError;
 
 DbIOResult createDatabase(char* name);
