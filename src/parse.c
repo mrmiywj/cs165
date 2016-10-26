@@ -25,6 +25,37 @@ char* next_token(char** tokenizer, message_status* status) {
 }
 
 /**
+ * This method takes in a string representing the arguments to create a database.
+ * It parses those arguments, checks that they are valid, and creates a database.
+ **/
+
+message_status parse_create_db(char* create_arguments) {
+    char *token;
+    token = strsep(&create_arguments, ",");
+    if (token == NULL) {
+        return INCORRECT_FORMAT;                    
+    } else {
+        // create the database with given name
+        char* db_name = token;
+        db_name = trim_quotes(db_name);
+        int last_char = strlen(db_name) - 1;
+        if (last_char < 0 || db_name[last_char] != ')') {
+            return INCORRECT_FORMAT;
+        }
+        db_name[last_char] = '\0';
+        token = strsep(&create_arguments, ",");
+        if (token != NULL) {
+            return INCORRECT_FORMAT;
+        }
+        if (add_db(db_name, true).code == OK) {
+            return OK_DONE;
+        } else {
+            return EXECUTION_ERROR;
+        }
+    }
+}
+
+/**
  * This method takes in a string representing the arguments to create a table.
  * It parses those arguments, checks that they are valid, and creates a table.
  **/
@@ -70,34 +101,57 @@ message_status parse_create_tbl(char* create_arguments) {
 }
 
 /**
- * This method takes in a string representing the arguments to create a database.
- * It parses those arguments, checks that they are valid, and creates a database.
+ * This method takes in a string representing the arguments to create a column.
+ * It parses those arguments, checks that they are valid, and creates a column.
  **/
 
-message_status parse_create_db(char* create_arguments) {
-    char *token;
-    token = strsep(&create_arguments, ",");
-    if (token == NULL) {
-        return INCORRECT_FORMAT;                    
-    } else {
-        // create the database with given name
-        char* db_name = token;
-        db_name = trim_quotes(db_name);
-        int last_char = strlen(db_name) - 1;
-        if (last_char < 0 || db_name[last_char] != ')') {
-            return INCORRECT_FORMAT;
-        }
-        db_name[last_char] = '\0';
-        token = strsep(&create_arguments, ",");
-        if (token != NULL) {
-            return INCORRECT_FORMAT;
-        }
-        if (add_db(db_name, true).code == OK) {
-            return OK_DONE;
-        } else {
-            return EXECUTION_ERROR;
-        }
+message_status parse_create_col(char* create_arguments) {
+    message_status status = OK_DONE;
+
+    printf("Arguments: %s\n", create_arguments);
+
+    char** create_arguments_index = &create_arguments;
+    char* col_name = next_token(create_arguments_index, &status);
+    char* table_path = next_token(create_arguments_index, &status);
+
+    col_name = trim_quotes(col_name);
+    // not enough arguments
+    if (status == INCORRECT_FORMAT) {
+        return status;
     }
+
+    // read and chop off last char
+    int last_char = strlen(table_path) - 1;
+    if (table_path[last_char] != ')') {
+        return INCORRECT_FORMAT;
+    }
+    table_path[last_char] = '\0';
+
+    // pull out database and table from table_path
+    char* db_name = table_path;
+    char* tbl_name = table_path;
+    while (*tbl_name != '\0') {
+        if (*tbl_name == '.') {
+            *tbl_name++ = '\0';
+            break;
+        }
+        tbl_name++;
+    }
+
+    // check that the database argument is the current active database
+    if (strcmp(current_db->name, db_name) != 0) {
+        cs165_log(stdout, "query unsupported. Bad db name");
+        return QUERY_UNSUPPORTED;
+    }
+
+    Status create_status;
+    create_column(current_db, table_name, col_name, &create_status);
+    if (create_status.code != OK) {
+        cs165_log(stdout, "adding a column failed.");
+        return EXECUTION_ERROR;
+    }
+
+    return status;
 }
 
 /**
@@ -120,6 +174,8 @@ message_status parse_create(char* create_arguments) {
                 mes_status = parse_create_db(tokenizer_copy);
             } else if (strcmp(token, "tbl") == 0) {
                 mes_status = parse_create_tbl(tokenizer_copy);
+            } else if (strcmp(token, "col") == 0) {
+                mes_status = parse_create_col(tokenizer_copy); 
             } else {
                 mes_status = UNKNOWN_COMMAND;
             }
