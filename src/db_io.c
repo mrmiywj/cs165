@@ -1,4 +1,5 @@
 #include "db_io.h"
+#include "utils.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,7 +40,7 @@ int createFile(const char* dir, const char* file) {
     }
     char filePath[MAX_SIZE_NAME * 3 + 2];
     snprintf(filePath, strlen(dir) + 1 + strlen(file), "%s/%s", dir, file);
-    printf("Creating file at %s...\n", filePath);
+    cs165_log("Creating file at %s...\n", filePath);
 
     FILE* fp = fopen(filePath, "rb+");
     if (fp == NULL) {

@@ -4,13 +4,27 @@
 
 #include <string.h>
 
-// In this class, there will always be only one active database at a time
+/**
+ * External catalog file that will be used to index the current database at all times.
+ * Will be initialized at startup and written to file at shutdown.
+ */
 Db *current_db;
+
+Column* create_column(char *name, Table *table, bool sorted, Status *ret_status) {
+	(void) name;
+	(void) table;
+	(void) sorted;
+	(void) ret_status;
+	return NULL;
+}
 
 Table* create_table(Db* db, const char* name, size_t num_columns, Status *ret_status) {
 	(void) num_columns;
 	
+	// create the actual table directory
 	createTable((const char*) db->name, name);
+
+	// return OK
 	ret_status->code=OK;
 	return NULL;
 }
@@ -26,6 +40,7 @@ Status add_db(const char* db_name, bool new) {
 		return ret_status;
 	}
 
+	// destroy current db and replace with new db object
 	freeDb(current_db);
 	current_db = malloc(sizeof(Db));
 	strcpy(current_db->name, db_name);
@@ -33,8 +48,10 @@ Status add_db(const char* db_name, bool new) {
 	current_db->tables_size = 0;
 	current_db->tables_capacity = 0;
 
+	// create the actual database directory
 	createDatabase(db_name);
 	
+	// return OK
 	ret_status.code = OK;
 	return ret_status;
 }
