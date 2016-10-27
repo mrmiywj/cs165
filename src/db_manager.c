@@ -11,10 +11,11 @@
 Db *current_db;
 
 Column* create_column(char *name, Table *table, bool sorted, Status *ret_status) {
-	(void) name;
-	(void) table;
-	(void) sorted;
-	(void) ret_status;
+	int pathLength = DATA_PATH_LENGTH + strlen(current_db->name) + strlen(table->name) + 2;
+	char path[pathLength];
+	sprintf(path, "%s%s/%s", DATA_PATH, current_db->name, table->name);
+	log_info("Creating file %s in %s, result: %i\n", name, path, createFile(path, name));
+	ret_status->code=OK;
 	return NULL;
 }
 

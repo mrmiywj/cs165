@@ -139,13 +139,14 @@ message_status parse_create_col(char* create_arguments) {
     }
 
     // check that the database argument is the current active database
-    if (strcmp(current_db->name, db_name) != 0) {
-        cs165_log(stdout, "query unsupported. Bad db name");
-        return QUERY_UNSUPPORTED;
-    }
+    // if (strcmp(current_db->name, db_name) != 0) {
+    //     cs165_log(stdout, "query unsupported. Bad db name");
+    //     return QUERY_UNSUPPORTED;
+    // }
 
     Status create_status;
-    create_column(current_db, table_name, col_name, &create_status);
+    printf("tbl_name: %s, col_name: %s\n", tbl_name, col_name);
+    create_column(col_name, tbl_name, false, &create_status);
     if (create_status.code != OK) {
         cs165_log(stdout, "adding a column failed.");
         return EXECUTION_ERROR;

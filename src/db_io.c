@@ -35,14 +35,13 @@ int createDirectory(const char* path) {
 int createFile(const char* dir, const char* file) {
     // check directory for existence
     struct stat st;
-    if (stat(dir, &st) != -1) {
+    if (stat(dir, &st) == -1) {
         return ENOENT;
     }
     char filePath[MAX_SIZE_NAME * 3 + 2];
-    snprintf(filePath, strlen(dir) + 1 + strlen(file), "%s/%s", dir, file);
-    cs165_log("Creating file at %s...\n", filePath);
+    sprintf(filePath, "%s/%s", dir, file);
 
-    FILE* fp = fopen(filePath, "rb+");
+    FILE* fp = fopen(filePath, "ab+");
     if (fp == NULL) {
         return errno;
     }
