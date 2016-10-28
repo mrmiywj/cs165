@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "client_context.h"
 
 extern Db* current_db;

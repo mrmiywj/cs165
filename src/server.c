@@ -24,9 +24,9 @@
 
 #include "common.h"
 #include "parse.h"
-#include "cs165_api.h"
+#include "api/cs165.h"
 #include "message.h"
-#include "utils.h"
+#include "utils/log.h"
 #include "db_execute.h"
 #include "client_context.h"
 
@@ -77,7 +77,7 @@ void handle_client(int client_socket) {
             DbOperator* query = parse_command(recv_message.payload, &send_message, client_socket, client_context);
 
             // 2. Handle request
-            char* result = execute_DbOperator(query);
+            char* result = executeDbOperator(query);
             send_message.length = strlen(result);
 
             // 3. Send status of the received message (OK, UNKNOWN_QUERY, etc)

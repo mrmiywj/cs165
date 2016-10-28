@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "cs165_api.h"
+#include "api/cs165.h"
 #include "parse.h"
-#include "utils.h"
+#include "utils/log.h"
 #include "create.h"
 #include "insert.h"
 #include "client_context.h"

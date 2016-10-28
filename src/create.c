@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "create.h"
-#include "utils.h"
+#include "utils/log.h"
 
 // handle a create query
 DbOperator* create(char* arguments, message* response) {
@@ -64,12 +64,21 @@ DbOperator* parse_create_db(char* arguments, message* response) {
         return NULL;
     }
     
-    if (add_db(db_name, true).code == OK) {
-        response->status = OK_DONE;
-    } else {
-        response->status = EXECUTION_ERROR;
-    }
-    return NULL;
+    DbOperator* result = malloc(sizeof(DbOperator));
+    result->type = CREATE;
+    result->fields.create = (CreateOperator) {
+        .type = CREATE_DATABASE, 
+        .params = &db_name, 
+        .num_params = 1
+    };
+    return result;
+
+    // if (add_db(db_name, true).code == OK) {
+    //     response->status = OK_DONE;
+    // } else {
+    //     response->status = EXECUTION_ERROR;
+    // }
+    // return NULL;
 }
 
 /**

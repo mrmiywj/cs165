@@ -101,7 +101,7 @@ typedef enum CreateType { CREATE_DATABASE, CREATE_TABLE, CREATE_COLUMN } CreateT
 typedef struct CreateOperator {
     CreateType type;
     char** params;
-    size_t num_cols;
+    size_t num_params;
 } CreateOperator;
 typedef struct InsertOperator {
     Table* table;

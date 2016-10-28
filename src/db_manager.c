@@ -1,8 +1,9 @@
-#include "cs165_api.h"
-#include "db_io.h"
-#include "db_catalog.h"
-
 #include <string.h>
+
+#include "api/cs165.h"
+#include "db_io.h"
+#include "db_manager.h"
+#include "utils/log.h"
 
 /**
  * External catalog file that will be used to index the current database at all times.
@@ -10,11 +11,27 @@
  */
 Db *current_db;
 
+// frees a table object
+void freeTable(Table* tbl) {
+    if (tbl == NULL)
+        return;
+    for (size_t i = 0, count = tbl->col_count; i < count; i++)
+        free(tbl->columns[i]);
+    free(tbl);
+}
+
+// frees a database object
+void freeDb(Db* db) {
+    if (db == NULL)
+        return;
+    for (size_t i = 0, size = db->tables_size; i < size; i++)
+        freeTable(db->tables[i]);
+    free(db);
+}
+
 Column* create_column(char *name, Table *table, bool sorted, Status *ret_status) {
-	int pathLength = DATA_PATH_LENGTH + strlen(current_db->name) + strlen(table->name) + 2;
-	char path[pathLength];
-	sprintf(path, "%s%s/%s", DATA_PATH, current_db->name, table->name);
-	log_info("Creating file %s in %s, result: %i\n", name, path, createFile(path, name));
+	(void) sorted;
+	createColumn(current_db->name, table->name, name);
 	ret_status->code=OK;
 	return NULL;
 }

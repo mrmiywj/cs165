@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "cs165_api.h"
+#include "api/cs165.h"
 #include "message.h"
 
 DbOperator* insert(char* arguments, message* response);

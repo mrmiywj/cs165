@@ -6,8 +6,7 @@
 
 #define USER_PERM S_IRWXU
 
-#include "cs165_api.h"
-#include "db_catalog.h"
+#include "api/cs165.h"
 
 int createDatabase(const char* name);
 int createTable(const char* db, const char* name);
@@ -19,7 +18,5 @@ char** getColumns(const char* db, const char* table);
 
 Table* loadTable(const char* db, const char* table);
 size_t* loadColumn(const char* db, const char* table, const char* column);
-
-DbCatalog loadCatalog();
 
 #endif

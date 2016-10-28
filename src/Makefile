@@ -12,7 +12,7 @@ CC = gcc -std=c99 -g -ggdb3
 O ?= 0
 
 # Flags and other libraries
-override CFLAGS += -Wall -Wextra -pedantic -pthread -O$(O) -I$(INCLUDES)
+override CFLAGS += -Wall -Wextra -pedantic -pthread -O$(O) -I$(INCLUDES) -I$(INCLUDES)\**
 LDFLAGS =
 LIBS =
 INCLUDES = include
@@ -51,10 +51,14 @@ $(DEPSDIR)/stamp $(BUILDSTAMP):
 # dependency on the right side of whichever one requires the file.
 ##
 
-client: client.o utils.o
+INCL_UNIVERSAL = log.o
+INCL_CLIENT = 
+INCL_SERVER = parse.o db_manager.o client_context.o debug_utils.o db_io.o create.o insert.o db_execute.o
+
+client: client.o $(INCL_UNIVERSAL) $(INCL_CLIENT)
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
-server: server.o parse.o utils.o db_manager.o client_context.o debug_utils.o db_io.o db_catalog.o create.o insert.o db_execute.o
+server: server.o $(INCL_UNIVERSAL) $(INCL_SERVER)
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 clean:

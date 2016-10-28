@@ -22,7 +22,7 @@
 
 #include "common.h"
 #include "message.h"
-#include "utils.h"
+#include "utils/log.h"
 
 #define DEFAULT_STDIN_BUFFER_SIZE 1024
 

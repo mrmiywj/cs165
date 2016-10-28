@@ -9,10 +9,12 @@
 
 #include "common.h"
 #include "parse.h"
-#include "cs165_api.h"
+#include "api/cs165.h"
 #include "message.h"
-#include "utils.h"
+#include "utils/log.h"
 #include "client_context.h"
 
-char* execute_DbOperator(DbOperator* query);
-
+char* executeDbOperator(DbOperator* query);
+char* handleCreateQuery(DbOperator* query);
+char* handleInsertQuery(DbOperator* query);
+char* handleLoaderQuery(DbOperator* query);

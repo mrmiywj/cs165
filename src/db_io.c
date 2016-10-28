@@ -1,5 +1,6 @@
 #include "db_io.h"
-#include "utils.h"
+#include "db_manager.h"
+#include "utils/log.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -77,5 +78,3 @@ char** getColumns(const char* db, const char* table);
 
 Table* loadTable(const char* db, const char* table);
 size_t* loadColumn(const char* db, const char* table, const char* column);
-
-DbCatalog loadCatalog();
