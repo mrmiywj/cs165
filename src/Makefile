@@ -64,6 +64,7 @@ server: server.o $(INCL_UNIVERSAL) $(INCL_SERVER)
 clean:
 	rm -f client server *.o *~ *.bak core *.core cs165_unix_socket
 	rm -rf .deps
+	rm -rf data
 
 distclean: clean
 	rm -rf $(DEPSDIR)

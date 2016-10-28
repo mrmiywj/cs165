@@ -1,11 +1,14 @@
 **.DS_Store
 .DS_Store
-**.o
+
+src/**.o
 src/.deps/**
 src/server
 src/client
+src/data/**
+src/catalog
 
-**.log
-**.aux
-**.synctex.gz
-**.out
+docs/**/*.log
+docs/**/*.aux
+docs/**/*.synctex.gz
+docs/**/*.out
