@@ -4,3 +4,8 @@
 src/.deps/**
 src/server
 src/client
+
+**.log
+**.aux
+**.synctex.gz
+**.out
