@@ -27,6 +27,7 @@
 #include "cs165_api.h"
 #include "message.h"
 #include "utils.h"
+#include "db_execute.h"
 #include "client_context.h"
 
 #include "debug_utils.h"

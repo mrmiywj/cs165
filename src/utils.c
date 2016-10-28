@@ -105,4 +105,9 @@ void log_info(const char *format, ...) {
 #endif
 }
 
-
+char* next_token(char** tokenizer, message_status* status) {
+    char* token = strsep(tokenizer, ",");
+    if (token == NULL)
+        *status = INCORRECT_FORMAT;
+    return token;
+}

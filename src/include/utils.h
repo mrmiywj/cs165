@@ -10,6 +10,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "message.h"
+
 #define LOG
 #define LOG_ERR
 #define LOG_INFO
@@ -60,5 +62,8 @@ void log_err(const char *format, ...);
 //
 // Usage: log_info("Command received: %s", command_string);
 void log_info(const char *format, ...);
+
+// retrieves the next token separated by , in a string
+char* next_token(char** tokenizer, message_status* status);
 
 #endif /* __UTILS_H__ */

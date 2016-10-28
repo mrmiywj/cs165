@@ -1,12 +1,8 @@
-#include "cs165_api.h"
-#include "utils.h"
+#include <string.h>
+#include <stdio.h>
 
-char* next_token(char** tokenizer, message_status* status) {
-    char* token = strsep(tokenizer, ",");
-    if (token == NULL)
-        *status = INCORRECT_FORMAT;
-    return token;
-}
+#include "create.h"
+#include "utils.h"
 
 // handle a create query
 DbOperator* create(char* arguments, message* response) {
@@ -69,10 +65,11 @@ DbOperator* parse_create_db(char* arguments, message* response) {
     }
     
     if (add_db(db_name, true).code == OK) {
-        return OK_DONE;
+        response->status = OK_DONE;
     } else {
-        return EXECUTION_ERROR;
+        response->status = EXECUTION_ERROR;
     }
+    return NULL;
 }
 
 /**
@@ -80,44 +77,49 @@ DbOperator* parse_create_db(char* arguments, message* response) {
  * It parses those arguments, checks that they are valid, and creates a table.
  **/
 
-message_status parse_create_tbl(char* create_arguments) {
-    message_status status = OK_DONE;
-    char** create_arguments_index = &create_arguments;
-    char* table_name = next_token(create_arguments_index, &status);
-    char* db_name = next_token(create_arguments_index, &status);
-    char* col_cnt = next_token(create_arguments_index, &status);
+DbOperator* parse_create_tbl(char* arguments, message* response) {
+    response->status = OK_DONE;
+    char** arguments_index = &arguments;
+    char* table_name = next_token(arguments_index, &(response->status));
+    char* db_name = next_token(arguments_index, &(response->status));
+    char* col_cnt = next_token(arguments_index, &(response->status));
 
     table_name = trim_quotes(table_name);
     // not enough arguments
-    if (status == INCORRECT_FORMAT) {
-        return status;
+    if (response->status == INCORRECT_FORMAT) {
+        return NULL;
     }
 
     // read and chop off last char
     int last_char = strlen(col_cnt) - 1;
     if (col_cnt[last_char] != ')') {
-        return INCORRECT_FORMAT;
+        response->status = INCORRECT_FORMAT;
+        return NULL;
     }
     col_cnt[last_char] = '\0';
 
     // check that the database argument is the current active database
     if (strcmp(current_db->name, db_name) != 0) {
         cs165_log(stdout, "query unsupported. Bad db name");
-        return QUERY_UNSUPPORTED;
+        response->status = QUERY_UNSUPPORTED;
+        return NULL;
     }
 
     int column_cnt = atoi(col_cnt);
     if (column_cnt < 1) {
-        return INCORRECT_FORMAT;
+        response->status = INCORRECT_FORMAT;
+        return NULL;
     }
+    
     Status create_status;
     create_table(current_db, table_name, column_cnt, &create_status);
     if (create_status.code != OK) {
         cs165_log(stdout, "adding a table failed.");
-        return EXECUTION_ERROR;
+        response->status = EXECUTION_ERROR;
+        return NULL;
     }
 
-    return status;
+    return NULL;
 }
 
 /**
@@ -125,30 +127,33 @@ message_status parse_create_tbl(char* create_arguments) {
  * It parses those arguments, checks that they are valid, and creates a column.
  **/
 
-message_status parse_create_col(char* create_arguments) {
-    message_status status = OK_DONE;
+DbOperator* parse_create_col(char* arguments, message* response) {
+    response->status = OK_DONE;
+    
+    log_info("Arguments: %s\n", arguments);
 
-    printf("Arguments: %s\n", create_arguments);
-
-    char** create_arguments_index = &create_arguments;
-    char* col_name = next_token(create_arguments_index, &status);
-    char* table_path = next_token(create_arguments_index, &status);
+    char** arguments_index = &arguments;
+    char* col_name = next_token(arguments_index, &(response->status));
+    char* table_path = next_token(arguments_index, &(response->status));
 
     col_name = trim_quotes(col_name);
     // not enough arguments
-    if (status == INCORRECT_FORMAT) {
-        return status;
+    if (response->status == INCORRECT_FORMAT) {
+        return NULL;
     }
 
     // read and chop off last char
     int last_char = strlen(table_path) - 1;
     if (table_path[last_char] != ')') {
-        return INCORRECT_FORMAT;
+        response->status = INCORRECT_FORMAT;
+        return NULL;
     }
     table_path[last_char] = '\0';
 
     // pull out database and table from table_path
     char* db_name = table_path;
+    // TODO: actually use this variable
+    (void) db_name;
     char* tbl_name = table_path;
     while (*tbl_name != '\0') {
         if (*tbl_name == '.') {
@@ -166,11 +171,14 @@ message_status parse_create_col(char* create_arguments) {
 
     Status create_status;
     printf("tbl_name: %s, col_name: %s\n", tbl_name, col_name);
-    create_column(col_name, tbl_name, false, &create_status);
+    Table table;
+    strcpy(table.name, "table");
+    create_column(col_name, &table, false, &create_status);
     if (create_status.code != OK) {
         cs165_log(stdout, "adding a column failed.");
-        return EXECUTION_ERROR;
+        response->status = EXECUTION_ERROR;
+        return NULL;
     }
 
-    return status;
+    return NULL;
 }

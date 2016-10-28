@@ -9,13 +9,6 @@
 #define MAX_SIZE_NAME 64
 #define HANDLE_MAX_SIZE 64
 
-// ================ STATUS ================
-typedef enum StatusCode { OK, ERROR } StatusCode;
-typedef struct Status {
-    StatusCode code;
-    char* error_message;
-} Status;
-
 // ================ DATABASE ================
 typedef enum DataType {
      INT,
@@ -43,62 +36,13 @@ typedef struct Db {
     size_t tables_capacity;
 } Db;
 
-// =============== EXECUTION ===============
-typedef enum OperatorType { CREATE, INSERT, LOADER } OperatorType;
-typedef enum CreateType { DATABASE, TABLE, COLUMN } CreateType;
-typedef struct CreateOperator {
-    CreateType type;
-    char** params;
-    size_t num_cols;
-}
-typedef struct InsertOperator {
-    Table* table;
-    int* values;
-} InsertOperator;
-typedef struct LoaderOperator {
-    char* file_name;
-} OpenOperator;
-typedef union OperatorFields {
-    CreateOperator create;
-    InsertOperator insert;
-    LoaderOperator loader;
-} OperatorFields;
-
-typedef struct DbOperator {
-    OperatorType type;
-    OperatorFields fields;
-    int client_fd;
-    ClientContext* context;
-} DbOperator;
-
-// ================ QUERIES ================
-struct Comparator;
-//struct ColumnIndex;
-
-typedef enum ComparatorType {
-    NO_COMPARISON = 0,
-    LESS_THAN = 1,
-    GREATER_THAN = 2,
-    EQUAL = 4,
-    LESS_THAN_OR_EQUAL = 5,
-    GREATER_THAN_OR_EQUAL = 6
-} ComparatorType;
-typedef struct Comparator {
-    long int p_low; // used in equality and ranges.
-    long int p_high; // used in range compares. 
-    GeneralizedColumn* gen_col;
-    ComparatorType type1;
-    ComparatorType type2;
-    char* handle;
-} Comparator;
-
+// ================ NOT USEFUL YET ================
 typedef struct Result {
     size_t num_tuples;
     DataType data_type;
     void *payload;
 } Result;
 
-// ================ NOT USEFUL YET ================
 typedef enum GeneralizedColumnType {
     RESULT,
     COLUMN
@@ -122,6 +66,62 @@ typedef struct ClientContext {
     int chandles_in_use;
     int chandle_slots;
 } ClientContext;
+
+// ================ QUERIES ================
+struct Comparator;
+//struct ColumnIndex;
+
+typedef enum ComparatorType {
+    NO_COMPARISON = 0,
+    LESS_THAN = 1,
+    GREATER_THAN = 2,
+    EQUAL = 4,
+    LESS_THAN_OR_EQUAL = 5,
+    GREATER_THAN_OR_EQUAL = 6
+} ComparatorType;
+typedef struct Comparator {
+    long int p_low; // used in equality and ranges.
+    long int p_high; // used in range compares. 
+    GeneralizedColumn* gen_col;
+    ComparatorType type1;
+    ComparatorType type2;
+    char* handle;
+} Comparator;
+
+// ================ STATUS ================
+typedef enum StatusCode { OK, ERROR } StatusCode;
+typedef struct Status {
+    StatusCode code;
+    char* error_message;
+} Status;
+
+// =============== EXECUTION ===============
+typedef enum OperatorType { CREATE, INSERT, LOADER } OperatorType;
+typedef enum CreateType { CREATE_DATABASE, CREATE_TABLE, CREATE_COLUMN } CreateType;
+typedef struct CreateOperator {
+    CreateType type;
+    char** params;
+    size_t num_cols;
+} CreateOperator;
+typedef struct InsertOperator {
+    Table* table;
+    int* values;
+} InsertOperator;
+typedef struct LoaderOperator {
+    char* file_name;
+} LoaderOperator;
+typedef union OperatorFields {
+    CreateOperator create;
+    InsertOperator insert;
+    LoaderOperator loader;
+} OperatorFields;
+
+typedef struct DbOperator {
+    OperatorType type;
+    OperatorFields fields;
+    int client_fd;
+    ClientContext* context;
+} DbOperator;
 
 // =============== PUBLIC ===============
 extern Db *current_db;
