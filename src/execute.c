@@ -1,5 +1,5 @@
-#include "db_execute.h"
-#include "debug_utils.h"
+#include "query/execute.h"
+#include "util/debug.h"
 
 /** execute_DbOperator takes as input the DbOperator and executes the query. **/
 char* executeDbOperator(DbOperator* query) {

@@ -2,7 +2,7 @@
 #define __DEBUG_UTILS__
 
 #include "api/cs165.h"
-#include "utils/log.h"
+#include "util/log.h"
 
 /* Prints a DbOperator object. */
 void printDbOperator(DbOperator* query);

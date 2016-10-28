@@ -1,5 +1,5 @@
-#include "utils/log.h"
-#include "debug_utils.h"
+#include "util/log.h"
+#include "util/debug.h"
 
 /* Prints a DbOperator object. */
 void printDbOperator(DbOperator* query) {

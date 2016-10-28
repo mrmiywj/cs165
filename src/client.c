@@ -20,9 +20,9 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "common.h"
-#include "message.h"
-#include "utils/log.h"
+#include "util/const.h"
+#include "util/message.h"
+#include "util/log.h"
 
 #define DEFAULT_STDIN_BUFFER_SIZE 1024
 

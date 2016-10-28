@@ -7,11 +7,11 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "common.h"
-#include "parse.h"
+#include "util/const.h"
+#include "query/parse.h"
 #include "api/cs165.h"
-#include "message.h"
-#include "utils/log.h"
+#include "util/message.h"
+#include "util/log.h"
 #include "client_context.h"
 
 char* executeDbOperator(DbOperator* query);

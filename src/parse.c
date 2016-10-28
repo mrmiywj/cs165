@@ -6,10 +6,11 @@
 #include <ctype.h>
 
 #include "api/cs165.h"
-#include "parse.h"
-#include "utils/log.h"
-#include "create.h"
-#include "insert.h"
+#include "query/parse.h"
+#include "util/log.h"
+#include "util/strmanip.h"
+#include "exec/create.h"
+#include "exec/insert.h"
 #include "client_context.h"
 
 /**

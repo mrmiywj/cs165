@@ -1,70 +1,11 @@
 #include <stdio.h>
-#include <string.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include "utils/log.h"
+#include <stdarg.h>
+
+#include "util/log.h"
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
-
-char* trim_newline(char *str) {
-    int length = strlen(str);
-    int current = 0;
-    for (int i = 0; i < length; ++i) {
-        if (!(str[i] == '\r' || str[i] == '\n')) {
-            str[current++] = str[i];
-        }
-    }
-
-    // Write new null terminator
-    str[current] = '\0';
-    return str;
-}
-
-char* trim_whitespace(char *str)
-{
-    int length = strlen(str);
-    int current = 0;
-    for (int i = 0; i < length; ++i) {
-        if (!isspace(str[i])) {
-            str[current++] = str[i];
-        }
-    }
-
-    // Write new null terminator
-    str[current] = '\0';
-    return str;
-}
-
-char* trim_parenthesis(char *str) {
-    int length = strlen(str);
-    int current = 0;
-    for (int i = 0; i < length; ++i) {
-        if (!(str[i] == '(' || str[i] == ')')) {
-            str[current++] = str[i];
-        }
-    }
-
-    // Write new null terminator
-    str[current] = '\0';
-    return str;
-}
-
-char* trim_quotes(char *str) {
-    int length = strlen(str);
-    int current = 0;
-    for (int i = 0; i < length; ++i) {
-        if (str[i] != '\"') {
-            str[current++] = str[i];
-        }
-    }
-
-    // Write new null terminator
-    str[current] = '\0';
-    return str;
-}
 
 void cs165_log(FILE* out, const char *format, ...) {
 #ifdef LOG
@@ -103,11 +44,4 @@ void log_info(const char *format, ...) {
 #else
     (void) format;
 #endif
-}
-
-char* next_token(char** tokenizer, message_status* status) {
-    char* token = strsep(tokenizer, ",");
-    if (token == NULL)
-        *status = INCORRECT_FORMAT;
-    return token;
 }

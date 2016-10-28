@@ -1,8 +1,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "create.h"
-#include "utils/log.h"
+#include "exec/create.h"
+#include "util/log.h"
+#include "util/strmanip.h"
 
 // handle a create query
 DbOperator* create(char* arguments, message* response) {

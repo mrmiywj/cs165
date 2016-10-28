@@ -22,16 +22,16 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "common.h"
-#include "parse.h"
+#include "util/const.h"
+#include "query/parse.h"
 #include "api/cs165.h"
-#include "message.h"
-#include "utils/log.h"
-#include "db_execute.h"
+#include "util/message.h"
+#include "util/log.h"
+#include "query/execute.h"
 #include "client_context.h"
 
-#include "debug_utils.h"
-#include "db_execute.h"
+#include "util/debug.h"
+#include "query/execute.h"
 
 #define DEFAULT_QUERY_BUFFER_SIZE 1024
 

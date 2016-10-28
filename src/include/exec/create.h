@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "api/cs165.h"
-#include "message.h"
+#include "util/message.h"
 
 DbOperator* create(char* arguments, message* response);
 DbOperator* parse_create_db(char* arguments, message* response);

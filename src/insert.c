@@ -1,6 +1,7 @@
-#include "insert.h"
+#include "exec/insert.h"
 #include "client_context.h"
-#include "utils/log.h"
+#include "util/log.h"
+#include "util/strmanip.h"
 
 DbOperator* insert(char* arguments, message* response) {
     unsigned int columns_inserted = 0;

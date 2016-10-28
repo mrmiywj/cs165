@@ -1,6 +1,6 @@
-#include "db_io.h"
-#include "db_manager.h"
-#include "utils/log.h"
+#include "api/db_io.h"
+#include "util/cleanup.h"
+#include "util/log.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

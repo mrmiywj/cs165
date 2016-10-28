@@ -5,6 +5,6 @@
 #include <ctype.h>
 
 #include "api/cs165.h"
-#include "message.h"
+#include "util/message.h"
 
 DbOperator* insert(char* arguments, message* response);

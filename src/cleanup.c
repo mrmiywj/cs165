@@ -1,9 +1,9 @@
 #include <string.h>
 
 #include "api/cs165.h"
-#include "db_io.h"
-#include "db_manager.h"
-#include "utils/log.h"
+#include "api/db_io.h"
+#include "util/cleanup.h"
+#include "util/log.h"
 
 /**
  * External catalog file that will be used to index the current database at all times.

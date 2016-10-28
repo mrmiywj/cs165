@@ -51,9 +51,9 @@ $(DEPSDIR)/stamp $(BUILDSTAMP):
 # dependency on the right side of whichever one requires the file.
 ##
 
-INCL_UNIVERSAL = log.o
+INCL_UNIVERSAL = log.o strmanip.o
 INCL_CLIENT = 
-INCL_SERVER = parse.o db_manager.o client_context.o debug_utils.o db_io.o create.o insert.o db_execute.o
+INCL_SERVER = cleanup.o client_context.o create.o db_io.o debug.o execute.o insert.o parse.o
 
 client: client.o $(INCL_UNIVERSAL) $(INCL_CLIENT)
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
