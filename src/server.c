@@ -28,7 +28,6 @@
 #include "util/message.h"
 #include "util/log.h"
 #include "query/execute.h"
-#include "client_context.h"
 
 #include "util/debug.h"
 #include "query/execute.h"

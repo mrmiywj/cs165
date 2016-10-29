@@ -12,7 +12,6 @@
 #include "api/cs165.h"
 #include "util/message.h"
 #include "util/log.h"
-#include "client_context.h"
 
 Db *current_db;
 

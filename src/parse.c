@@ -11,7 +11,6 @@
 #include "util/strmanip.h"
 #include "parse/create.h"
 #include "parse/insert.h"
-#include "client_context.h"
 
 /**
  * parse_command takes as input the send_message from the client and then
