@@ -147,8 +147,7 @@ int setup_server() {
 // After handling the client, it will exit.
 // You will need to extend this to handle multiple concurrent clients
 // and remain running until it receives a shut-down command.
-int main(void)
-{
+int main(void) {
     int server_socket = setup_server();
     if (server_socket < 0) {
         exit(1);
