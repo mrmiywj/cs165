@@ -16,7 +16,7 @@ typedef enum DataType {
      FLOAT
 } DataType;
 typedef struct Column {
-    char name[MAX_SIZE_NAME + 1]; 
+    char name[MAX_SIZE_NAME + 1];
     int* data;
     // You will implement column indexes later. 
     void* index;
@@ -27,7 +27,8 @@ typedef struct Table {
     char name [MAX_SIZE_NAME + 1];
     Column** columns;
     size_t col_count;
-    size_t table_length;
+    size_t num_rows;
+    size_t capacity;
 } Table;
 typedef struct Db {
     char name[MAX_SIZE_NAME + 1];
@@ -105,8 +106,9 @@ typedef struct CreateOperator {
     size_t num_params;
 } CreateOperator;
 typedef struct InsertOperator {
-    Table* table;
+    char* tbl_name;
     int* values;
+    size_t num_values;
 } InsertOperator;
 typedef struct LoaderOperator {
     char* file_name;

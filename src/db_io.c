@@ -27,7 +27,7 @@ int createDirectory(const char* path) {
         if (isSlash)
             *p = 0;
         mkdir(tmp, USER_PERM);
-        if (isSlash) 
+        if (isSlash)
             *p = '/';
     }
     return 0;

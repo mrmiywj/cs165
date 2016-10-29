@@ -42,22 +42,23 @@ void printDbOperator(DbOperator* query) {
         case INSERT:
             log_info("\tType: INSERT\n");
             /* DbOperator.fields.insert.table.name */
-            if (fields.insert.table == NULL) {
+            if (fields.insert.tbl_name == NULL) {
                 log_info("\tNo table object\n");
             } else {
-                log_info("\tInsert table: %s\n", fields.insert.table->name);
-                log_info("\t    %i columns\n", fields.insert.table->col_count);
-                log_info("\t    %i table length\n", fields.insert.table->table_length);
+                log_info("\tTable name: %s\n", fields.insert.tbl_name);
             }
 
             /* DbOperator.fields.insert.values */
             log_info("\tInsert values: [ ");
             if (fields.insert.values != NULL) {
-                for (size_t i = 0; i < sizeof(fields.insert.values) / sizeof(int); i++) {
+                for (size_t i = 0; i < fields.insert.num_values; i++) {
                     log_info("%i ", fields.insert.values[i]);
                 }
             }
             log_info("]\n");
+
+            /* DbOperator.fields.insert.num_values */
+            log_info("\t# values: %i\n", fields.insert.num_values);
             break;
         case LOADER:
             log_info("\tType: LOADER\n");
@@ -89,32 +90,33 @@ void printDatabase(Db* db) {
     log_info("Db object at %p\n", db);
 
     // Db.(name, num_tables, tables_size, tables_capacity)
-    log_info("\tName: %s\n", db->name);
-    log_info("\tNum tables: %i\n", db->num_tables);
-    log_info("\tTable size: %i\n", db->tables_size);
-    log_info("\tTable maxsize: %i\n", db->tables_capacity);
+    log_info("    Name: %s\n", db->name);
+    log_info("    Num tables: %i\n", db->num_tables);
+    log_info("    Table size: %i\n", db->tables_size);
+    log_info("    Table maxsize: %i\n", db->tables_capacity);
 
     // print each of the tables
     for (size_t i = 0; i < db->num_tables; i++) {
-        log_info("\tTable %i:\n", i);
-        printTable(db->tables[i], "\t    ");
+        log_info("    Table %i:\n", i);
+        printTable(db->tables[i], "\t");
     }
     log_info("\n");
 }
 
 /* Prints a description of a Table object. */
 void printTable(Table* tbl, char* prefix) {
-    // Table.(name, col_count, table_length)
+    // Table.(name, col_count, num_rows)
     log_info("%sName: %s\n", prefix, tbl->name);
     log_info("%s# Columns: %i\n", prefix, tbl->col_count);
-    log_info("%sTable length: %i\n", prefix, tbl->table_length);
+    log_info("%s# Rows: %i\n", prefix, tbl->num_rows);
+    log_info("%sCapacity: %i\n", prefix, tbl->capacity);
     
     // print each of the columns
     char next_prefix[16];
     sprintf(next_prefix, "%s%s", prefix, "    ");
     for (size_t i = 0; i < tbl->col_count; i++) {
         log_info("%sColumn %i:\n", prefix, i);
-        printColumn(tbl->columns[i], next_prefix, tbl->table_length);
+        printColumn(tbl->columns[i], next_prefix, tbl->num_rows);
     }
 }
 
@@ -124,7 +126,9 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
     if (nvals == 0) {
         log_info("%sNo values\n", prefix);
     }
+    log_info("%sValues: [ ", prefix);
     for (size_t i = 0; i < nvals; i++) {
-        log_info("%s    Value %i: %i\n", prefix, col->data[i]);
+        log_info("%i", col->data[i]);
     }
+    log_info(" ]\n");
 }

@@ -13,6 +13,9 @@
 #include "util/message.h"
 #include "util/log.h"
 
+#define COL_INITIAL_SIZE 100
+#define COL_RESIZE_FACTOR 2
+
 Db *current_db;
 
 char* executeDbOperator(DbOperator* query, message* send_message);
