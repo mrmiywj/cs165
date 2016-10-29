@@ -23,14 +23,12 @@ DbOperator* parse_insert(char* arguments, message* response) {
         // get values from query
         size_t columns_inserted = 1;
         char* cpy = arguments;
-        printf("parse insert: %s\n", cpy);
         while (*cpy != '\0') {
             printf("%c", *cpy);
             if (*cpy == ',')
                 columns_inserted++;
             cpy++;
         }
-        printf("columns inserted: %i\n", columns_inserted);
         dbo->fields.insert.num_values = columns_inserted;
         dbo->fields.insert.values = malloc(sizeof(int) * columns_inserted);
         int index = 0;

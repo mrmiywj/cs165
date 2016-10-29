@@ -128,7 +128,7 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
     }
     log_info("%sValues: [ ", prefix);
     for (size_t i = 0; i < nvals; i++) {
-        log_info("%i", col->data[i]);
+        log_info("%i ", col->data[i]);
     }
-    log_info(" ]\n");
+    log_info("]\n");
 }

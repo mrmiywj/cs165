@@ -182,7 +182,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
             }
             table->columns = new_cols;
         }
-        Column* new_col = malloc(sizeof(Column*));
+        Column* new_col = malloc(sizeof(Column));
         strcpy(new_col->name, col_name);
         new_col->data = NULL;
         new_col->index = NULL;
