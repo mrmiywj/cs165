@@ -5,11 +5,7 @@
 #include "util/cleanup.h"
 #include "util/log.h"
 
-/**
- * External catalog file that will be used to index the current database at all times.
- * Will be initialized at startup and written to file at shutdown.
- */
-Db *current_db;
+extern Db* current_db;
 
 // frees a table object
 void freeTable(Table* tbl) {

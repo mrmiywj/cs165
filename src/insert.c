@@ -1,9 +1,9 @@
-#include "exec/insert.h"
+#include "parse/insert.h"
 #include "client_context.h"
 #include "util/log.h"
 #include "util/strmanip.h"
 
-DbOperator* insert(char* arguments, message* response) {
+DbOperator* parse_insert(char* arguments, message* response) {
     unsigned int columns_inserted = 0;
     char* token = NULL;
     if (strncmp(arguments, "(", 1) == 0) {
@@ -13,7 +13,7 @@ DbOperator* insert(char* arguments, message* response) {
         if (response->status == INCORRECT_FORMAT) {
             return NULL;
         }
-        // lookup the table and make sure it exists. 
+        // lookup the table and make sure it exists.
         Table* insert_table = lookup_table(table_name);
         if (insert_table == NULL) {
             response->status = OBJECT_NOT_FOUND;

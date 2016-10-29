@@ -6,11 +6,11 @@
 #include <ctype.h>
 
 #include "api/cs165.h"
-#include "query/parse.h"
+#include "parse/parse.h"
 #include "util/log.h"
 #include "util/strmanip.h"
-#include "exec/create.h"
-#include "exec/insert.h"
+#include "parse/create.h"
+#include "parse/insert.h"
 #include "client_context.h"
 
 /**
@@ -41,7 +41,7 @@ DbOperator* parse_command(
         handle = NULL;
     }
 
-    cs165_log(stdout, "QUERY: %s\n", query_command);
+    log_info("QUERY: %s", query_command);
     send_message->status = OK_WAIT_FOR_RESPONSE;
     query_command = trim_whitespace(query_command);
 
@@ -56,10 +56,10 @@ DbOperator* parse_command(
 DbOperator* process_query(char* query, message* send_message) {
     if (strncmp(query, "create", 6) == 0) {
         query += 6;
-        return create(query, send_message);
+        return parse_create(query, send_message);
     } else if (strncmp(query, "relational_insert", 17) == 0) {
         query += 17;
-        return insert(query, send_message);
+        return parse_insert(query, send_message);
     } else {
         return NULL;
     }

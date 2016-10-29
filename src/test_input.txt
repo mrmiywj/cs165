@@ -1,0 +1,3 @@
+create(db,"awesomebase")
+create(tbl,"table",awesomebase,1)
+create(col,"col",awesomebase.table)

@@ -1,12 +1,12 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "exec/create.h"
+#include "parse/create.h"
 #include "util/log.h"
 #include "util/strmanip.h"
 
 // handle a create query
-DbOperator* create(char* arguments, message* response) {
+DbOperator* parse_create(char* arguments, message* response) {
     size_t space = strlen(arguments) + 1;
     char *copy = malloc(space * sizeof(char));
     strcpy(copy, arguments);
@@ -42,12 +42,13 @@ DbOperator* create(char* arguments, message* response) {
 }
 
 DbOperator* parse_create_db(char* arguments, message* response) {
+    response->status = OK_DONE;
     char *db_name = strsep(&arguments, ",");
     
     // check for database name
     if (db_name == NULL) {
         response->status = INCORRECT_FORMAT;
-        return NULL;                    
+        return NULL;
     }
     
     // create the database with given name
@@ -65,21 +66,17 @@ DbOperator* parse_create_db(char* arguments, message* response) {
         return NULL;
     }
     
+    // create DbOperator and return
     DbOperator* result = malloc(sizeof(DbOperator));
     result->type = CREATE;
+    char** params = malloc(sizeof(char*));
+    params[0] = db_name;
     result->fields.create = (CreateOperator) {
         .type = CREATE_DATABASE, 
-        .params = &db_name, 
+        .params = params, 
         .num_params = 1
     };
     return result;
-
-    // if (add_db(db_name, true).code == OK) {
-    //     response->status = OK_DONE;
-    // } else {
-    //     response->status = EXECUTION_ERROR;
-    // }
-    // return NULL;
 }
 
 /**
@@ -108,28 +105,26 @@ DbOperator* parse_create_tbl(char* arguments, message* response) {
     }
     col_cnt[last_char] = '\0';
 
-    // check that the database argument is the current active database
-    if (strcmp(current_db->name, db_name) != 0) {
-        cs165_log(stdout, "query unsupported. Bad db name");
-        response->status = QUERY_UNSUPPORTED;
-        return NULL;
-    }
-
+    // get column count for table
     int column_cnt = atoi(col_cnt);
     if (column_cnt < 1) {
         response->status = INCORRECT_FORMAT;
         return NULL;
     }
     
-    Status create_status;
-    create_table(current_db, table_name, column_cnt, &create_status);
-    if (create_status.code != OK) {
-        cs165_log(stdout, "adding a table failed.");
-        response->status = EXECUTION_ERROR;
-        return NULL;
-    }
-
-    return NULL;
+    // create DbOperator and return
+    DbOperator* result = malloc(sizeof(DbOperator));
+    result->type = CREATE;
+    char** params = malloc(3 * sizeof(char*));
+    params[0] = db_name;
+    params[1] = table_name;
+    params[2] = col_cnt;
+    result->fields.create = (CreateOperator) {
+        .type = CREATE_TABLE, 
+        .params = params,
+        .num_params = 3
+    };
+    return result;
 }
 
 /**
@@ -139,9 +134,6 @@ DbOperator* parse_create_tbl(char* arguments, message* response) {
 
 DbOperator* parse_create_col(char* arguments, message* response) {
     response->status = OK_DONE;
-    
-    log_info("Arguments: %s\n", arguments);
-
     char** arguments_index = &arguments;
     char* col_name = next_token(arguments_index, &(response->status));
     char* table_path = next_token(arguments_index, &(response->status));
@@ -161,9 +153,7 @@ DbOperator* parse_create_col(char* arguments, message* response) {
     table_path[last_char] = '\0';
 
     // pull out database and table from table_path
-    char* db_name = table_path;
-    // TODO: actually use this variable
-    (void) db_name;
+    char* db_name = trim_quotes(table_path);
     char* tbl_name = table_path;
     while (*tbl_name != '\0') {
         if (*tbl_name == '.') {
@@ -173,22 +163,17 @@ DbOperator* parse_create_col(char* arguments, message* response) {
         tbl_name++;
     }
 
-    // check that the database argument is the current active database
-    // if (strcmp(current_db->name, db_name) != 0) {
-    //     cs165_log(stdout, "query unsupported. Bad db name");
-    //     return QUERY_UNSUPPORTED;
-    // }
-
-    Status create_status;
-    printf("tbl_name: %s, col_name: %s\n", tbl_name, col_name);
-    Table table;
-    strcpy(table.name, "table");
-    create_column(col_name, &table, false, &create_status);
-    if (create_status.code != OK) {
-        cs165_log(stdout, "adding a column failed.");
-        response->status = EXECUTION_ERROR;
-        return NULL;
-    }
-
-    return NULL;
+    // create DbOperator and return
+    DbOperator* result = malloc(sizeof(DbOperator));
+    result->type = CREATE;
+    char** params = malloc(3 * sizeof(char*));
+    params[0] = db_name;
+    params[1] = tbl_name;
+    params[2] = col_name;
+    result->fields.create = (CreateOperator) {
+        .type = CREATE_COLUMN, 
+        .params = params,
+        .num_params = 3
+    };
+    return result;
 }

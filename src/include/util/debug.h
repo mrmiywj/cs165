@@ -6,5 +6,8 @@
 
 /* Prints a DbOperator object. */
 void printDbOperator(DbOperator* query);
+void printDatabase(Db* db);
+void printTable(Table* tbl, char* prefix);
+void printColumn(Column* col, char* prefix, size_t nvals);
 
 #endif /* __DEBUG_UTILS__ */

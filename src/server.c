@@ -23,7 +23,7 @@
 #include <string.h>
 
 #include "util/const.h"
-#include "query/parse.h"
+#include "parse/parse.h"
 #include "api/cs165.h"
 #include "util/message.h"
 #include "util/log.h"
@@ -77,7 +77,7 @@ void handle_client(int client_socket) {
             DbOperator* query = parse_command(recv_message.payload, &send_message, client_socket, client_context);
 
             // 2. Handle request
-            char* result = executeDbOperator(query);
+            char* result = executeDbOperator(query, &send_message);
             send_message.length = strlen(result);
 
             // 3. Send status of the received message (OK, UNKNOWN_QUERY, etc)

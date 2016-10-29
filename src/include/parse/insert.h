@@ -7,4 +7,4 @@
 #include "api/cs165.h"
 #include "util/message.h"
 
-DbOperator* insert(char* arguments, message* response);
+DbOperator* parse_insert(char* arguments, message* response);

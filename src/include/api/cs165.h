@@ -16,7 +16,7 @@ typedef enum DataType {
      FLOAT
 } DataType;
 typedef struct Column {
-    char name[MAX_SIZE_NAME]; 
+    char name[MAX_SIZE_NAME + 1]; 
     int* data;
     // You will implement column indexes later. 
     void* index;
@@ -24,14 +24,15 @@ typedef struct Column {
     //bool clustered;
 } Column;
 typedef struct Table {
-    char name [MAX_SIZE_NAME];
+    char name [MAX_SIZE_NAME + 1];
     Column** columns;
     size_t col_count;
     size_t table_length;
 } Table;
 typedef struct Db {
-    char name[MAX_SIZE_NAME]; 
+    char name[MAX_SIZE_NAME + 1];
     Table** tables;
+    size_t num_tables;
     size_t tables_size;
     size_t tables_capacity;
 } Db;
@@ -57,7 +58,7 @@ typedef struct GeneralizedColumn {
     GeneralizedColumnPointer column_pointer;
 } GeneralizedColumn;
 typedef struct GeneralizedColumnHandle {
-    char name[HANDLE_MAX_SIZE];
+    char name[HANDLE_MAX_SIZE + 1];
     GeneralizedColumn generalized_column;
 } GeneralizedColumnHandle;
 

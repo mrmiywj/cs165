@@ -8,13 +8,15 @@
 #include <string.h>
 
 #include "util/const.h"
-#include "query/parse.h"
+#include "parse/parse.h"
 #include "api/cs165.h"
 #include "util/message.h"
 #include "util/log.h"
 #include "client_context.h"
 
-char* executeDbOperator(DbOperator* query);
-char* handleCreateQuery(DbOperator* query);
-char* handleInsertQuery(DbOperator* query);
-char* handleLoaderQuery(DbOperator* query);
+Db *current_db;
+
+char* executeDbOperator(DbOperator* query, message* send_message);
+char* handleCreateQuery(DbOperator* query, message* send_message);
+char* handleInsertQuery(DbOperator* query, message* send_message);
+char* handleLoaderQuery(DbOperator* query, message* send_message);

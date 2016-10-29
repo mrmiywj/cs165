@@ -68,7 +68,7 @@ int createTable(const char* db, const char* name) {
 int createColumn(const char* db, const char* table, const char* name) {
     int pathLength = DATA_PATH_LENGTH + strlen(db) + strlen(table) + 2;
     char path[pathLength];
-    sprintf(path, "%s%s/%s", DATA_PATH, db, name);
+    sprintf(path, "%s%s/%s", DATA_PATH, db, table);
     return createFile(path, name);
 }
 
