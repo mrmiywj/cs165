@@ -124,9 +124,6 @@ typedef struct SelectOperator {
     int minimum;
     int maximum;
 } SelectOperator;
-typedef struct PrintOperator {
-    char* handle;
-} PrintOperator;
 typedef struct FetchOperator {
     char* db_name;
     char* tbl_name;
@@ -134,6 +131,9 @@ typedef struct FetchOperator {
     char* source;
     char* target;
 } FetchOperator;
+typedef struct PrintOperator {
+    char* handle;
+} PrintOperator;
 typedef union OperatorFields {
     CreateOperator create;
     InsertOperator insert;

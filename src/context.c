@@ -16,6 +16,13 @@ ClientContext* searchContext(int fd) {
     return NULL;
 }
 
+GeneralizedColumnHandle* findHandle(ClientContext* context, char* handle) {
+    for (int i = 0; i < context->chandles_in_use; i++)
+        if (strcmp(context->chandle_table[i]->name, handle) == 0)
+            return &(context->chandle_table[i]);
+    return NULL;
+}
+
 void insertContext(ClientContext* context) {
     LinkedList* new_node = malloc(sizeof(LinkedList));
     new_node->context = context;
@@ -28,4 +35,16 @@ void deleteContext(ClientContext* context) {
     while ((*ptr)->context != context)
         ptr = &(*ptr)->next;
     *ptr = (*ptr)->next;
+}
+
+bool checkContextSize(ClientContext* context) {
+    if (context->chandles_in_use == context->chandle_slots) {
+        int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
+        GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
+        if (new_table == NULL)
+            return false;
+        context->chandle_table = new_table;
+        context->chandle_slots = new_size;
+    }
+    return true;
 }

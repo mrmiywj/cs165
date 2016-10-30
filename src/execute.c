@@ -48,6 +48,12 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
     case SELECT:
         res = handleSelectQuery(query, send_message);
         break;
+    case FETCH:
+        res = handleFetchQuery(query, send_message);
+        break;
+    case PRINT:
+        res = handlePrintQuery(query, send_message);
+        break;
     default:
         break;
     }
@@ -361,6 +367,101 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
 
     send_message->status = OK_DONE;
     return "Successfully inserted new row.";
+}
+
+char* handleFetchQuery(Dboperator* query, message* send_message) {
+    if (query == NULL || query->type != SELECT) {
+        send_message->status = QUERY_UNSUPPORTED;
+        return "Invalid query."; 
+    }
+
+    // retrieve params
+    FetchOperator select = query->fields.select;
+    char* db_name = select.db_name;
+    char* tbl_name = select.tbl_name;
+    char* col_name = select.col_name;
+    char* source = select.source;
+    char* target = select.target;
+    
+    // check database
+    if (strcmp(db_name, current_db->name) != 0) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Database not found.";
+    }
+
+    // if we didn't manage to find a table
+    Table* table = findTable(tbl_name);
+    if (table == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified table.";
+    }
+
+    // if we didn't manage to find a column
+    Column* column = findColumn(table, col_name);
+    if (column == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified column.";
+    }
+
+    // get context for current client
+    ClientContext* context = searchContext(query->client_fd);
+    if (context == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find context for current client.";
+    }
+
+    // search for source indices in context
+    GeneralizedColumnHandle* src_handle = findHandle(context, source);
+    if (src_handle == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified select source.";
+    }
+
+    // create a new GeneralizedColumnHandle
+    GeneralizedColumnHandle new_handle;
+    GeneralizedColumnPointer new_pointer;
+    new_pointer.result = malloc(sizeof(Result));
+    new_pointer.result->data_type = INT;
+    new_pointer.result->num_tuples = 0;
+    new_pointer.result->payload = NULL;
+    GeneralizedColumn gen_column = {
+        .column_type = RESULT,
+        .column_pointer = new_pointer
+    };
+    new_handle.generalized_column = gen_column;
+    strcpy(new_handle.name, target);
+
+    // scan through column and store all data in tuples
+    // int capacity = 0;
+    // int num_inserted = 0;
+    // int* data = NULL;
+    // for (size_t i = 0; i < table->num_rows; i++) {
+    //     if (num_inserted == capacity) {
+    //         capacity = (capacity == 0) ? 1 : 2 * capacity;
+    //         int* new_data = realloc(data, sizeof(int) * capacity);
+    //         if (new_data == NULL) {
+    //             free(new_data);
+    //             free(new_pointer.result);
+    //             send_message->status = EXECUTION_ERROR;
+    //             return "-- Error calculating result array.";
+    //         }
+    //         data = new_data;
+    //     }
+    //     data[num_inserted] = i;
+    //     num_inserted++;
+    // }
+    // new_pointer.result->payload = data;
+    // new_pointer.result->num_tuples = num_inserted;
+
+    // // search for context and add to the list of variables
+    // if (checkContextSize(context) != true) {
+    //     send_message->status = EXECUTION_ERROR;
+    //     return "-- Problem inserting new handle into client context.";
+    // }
+    // context->chandle_table[context->chandles_in_use++] = new_handle;
+
+    send_message->status = OK_DONE;
+    return "Successfully fetched data from select query.";
 }
 
 char* handlePrintQuery(DbOperator* query, message* send_message) {
