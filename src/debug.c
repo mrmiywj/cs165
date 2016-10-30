@@ -69,6 +69,13 @@ void printDbOperator(DbOperator* query) {
                 log_info("\tLoader: database %s\n", fields.loader.file_name);
             }
             break;
+        case SELECT:
+            log_info("\tType: SELECT\n");
+            log_info("\t    DB: %s\n", fields.select.db_name);
+            log_info("\t    TBL: %s\n", fields.select.tbl_name);
+            log_info("\t    COL: %s\n", fields.select.col_name);
+            log_info("\t    MIN: %i\n", fields.select.minimum);
+            log_info("\t    MAX: %i\n", fields.select.maximum);
         default:
             break;
     }

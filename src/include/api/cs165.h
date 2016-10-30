@@ -18,10 +18,6 @@ typedef enum DataType {
 typedef struct Column {
     char name[MAX_SIZE_NAME + 1];
     int* data;
-    // You will implement column indexes later. 
-    void* index;
-    //struct ColumnIndex *index;
-    //bool clustered;
 } Column;
 typedef struct Table {
     char name [MAX_SIZE_NAME + 1];
@@ -71,7 +67,6 @@ typedef struct ClientContext {
 
 // ================ QUERIES ================
 struct Comparator;
-//struct ColumnIndex;
 
 typedef enum ComparatorType {
     NO_COMPARISON = 0,
@@ -98,7 +93,12 @@ typedef struct Status {
 } Status;
 
 // =============== EXECUTION ===============
-typedef enum OperatorType { CREATE, INSERT, LOADER } OperatorType;
+typedef enum OperatorType { 
+    CREATE, 
+    INSERT, 
+    LOADER,
+    SELECT 
+} OperatorType;
 typedef enum CreateType { CREATE_DATABASE, CREATE_TABLE, CREATE_COLUMN } CreateType;
 typedef struct CreateOperator {
     CreateType type;
@@ -113,10 +113,18 @@ typedef struct InsertOperator {
 typedef struct LoaderOperator {
     char* file_name;
 } LoaderOperator;
+typedef struct SelectOperator {
+    char* db_name;
+    char* tbl_name;
+    char* col_name;
+    int minimum;
+    int maximum;
+} SelectOperator;
 typedef union OperatorFields {
     CreateOperator create;
     InsertOperator insert;
     LoaderOperator loader;
+    SelectOperator select;
 } OperatorFields;
 
 typedef struct DbOperator {

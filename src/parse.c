@@ -5,12 +5,12 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "api/cs165.h"
 #include "parse/parse.h"
 #include "util/log.h"
 #include "util/strmanip.h"
 #include "parse/create.h"
 #include "parse/insert.h"
+#include "parse/select.h"
 
 /**
  * parse_command takes as input the send_message from the client and then
@@ -56,10 +56,14 @@ DbOperator* process_query(char* query, message* send_message) {
     if (strncmp(query, "create", 6) == 0) {
         query += 6;
         return parse_create(query, send_message);
-    } else if (strncmp(query, "relational_insert", 17) == 0) {
+    }
+    if (strncmp(query, "relational_insert", 17) == 0) {
         query += 17;
         return parse_insert(query, send_message);
-    } else {
-        return NULL;
     }
+    if (strncmp(query, "select", 6) == 0) {
+        query += 6;
+        return parse_select(query, send_message);
+    }
+    return NULL;
 }

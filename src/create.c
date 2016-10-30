@@ -7,37 +7,37 @@
 
 // handle a create query
 DbOperator* parse_create(char* arguments, message* response) {
+    if (response == NULL)
+        return NULL;
+    if (arguments == NULL || *arguments != '(') {
+        response->status = UNKNOWN_COMMAND;
+        return NULL;
+    }
+    
+    // create a copy of string
     size_t space = strlen(arguments) + 1;
     char *copy = malloc(space * sizeof(char));
     strcpy(copy, arguments);
     
-    // move past (
-    if (strncmp(copy, "(", 1) == 0)
-        copy++;
-    else {
-        response->status = UNKNOWN_COMMAND;
-        return NULL;
-    }
-
+    // parse arguments
+    copy++;
     char* token = strsep(&copy, ",");
     if (token == NULL) {
         // invalid query format
         response->status = INCORRECT_FORMAT;
         return NULL;
-    } else {
-        // check for possible create queries
-        if (strcmp(token, "db") == 0)
-            return parse_create_db(copy, response);
-        if (strcmp(token, "tbl") == 0)
-            return parse_create_tbl(copy, response);
-        if (strcmp(token, "col") == 0)
-            return parse_create_col(copy, response);
-        
-        // fall-through; if nothing works yet, return UNKNOWN
-        response->status = UNKNOWN_COMMAND; 
     }
     
+    // check for possible create queries
+    if (strcmp(token, "db") == 0)
+        return parse_create_db(copy, response);
+    if (strcmp(token, "tbl") == 0)
+        return parse_create_tbl(copy, response);
+    if (strcmp(token, "col") == 0)
+        return parse_create_col(copy, response);
+    
     // fall-through; if no valid operator has been returned, return NULL
+    response->status = UNKNOWN_COMMAND;
     return NULL;
 }
 

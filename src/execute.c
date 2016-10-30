@@ -185,7 +185,6 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         Column* new_col = malloc(sizeof(Column));
         strcpy(new_col->name, col_name);
         new_col->data = NULL;
-        new_col->index = NULL;
         table->columns[table->col_count] = new_col;
         table->col_count++;
 
