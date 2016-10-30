@@ -39,10 +39,10 @@ DbOperator* parse_select(char* arguments, message* response) {
     dbo->fields.select.tbl_name = strsep(&dbo->fields.select.col_name, ".");
     dbo->fields.select.db_name = strsep(&dbo->fields.select.col_name, ".");
     dbo->fields.select.minimum = atoi(strsep(&copy, ","));
-    if (dbo->fields.select.minimum == -1)
+    if (dbo->fields.select.minimum == 0)
         dbo->fields.select.minimum = INT_MIN;
     dbo->fields.select.maximum = atoi(copy);
-    if (dbo->fields.select.maximum == -1)
+    if (dbo->fields.select.maximum == 0)
         dbo->fields.select.maximum = INT_MAX;
     return dbo;
 }
