@@ -14,6 +14,16 @@ Table* findTable(char* tbl_name) {
     return NULL;
 }
 
+Column* findColumn(Table* table, char* col_name) {
+    if (current_db == NULL || table == NULL || col_name == NULL)
+        return NULL;
+    for (size_t i = 0; i < table->col_count; i++) {
+        if (strcmp(table->columns[i]->name, col_name) == 0)
+            return table->columns[i];
+    }
+    return NULL;
+}
+
 /** execute_DbOperator takes as input the DbOperator and executes the query. **/
 char* executeDbOperator(DbOperator* query, message* send_message) {
     if (query == NULL) {
@@ -33,6 +43,9 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
         break;
     case LOADER:
         res = handleLoaderQuery(query, send_message);
+        break;
+    case SELECT:
+        res = handleSelectQuery(query, send_message);
         break;
     default:
         break;
@@ -161,10 +174,8 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
             return "-- Error creating column.";
         }
 
-        // find table
-        Table* table = findTable(tbl_name);
-        
         // if we didn't manage to find a table
+        Table* table = findTable(tbl_name);
         if (table == NULL) {
             send_message->status = INCORRECT_FORMAT;
             return "-- Unable to find specified table.";
@@ -196,6 +207,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
     }
     return "Not implemented yet.";
 }
+
 char* handleInsertQuery(DbOperator* query, message* send_message) {
     if (query == NULL || query->type != INSERT) {
         send_message->status = QUERY_UNSUPPORTED;
@@ -209,10 +221,8 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
     char* tbl_name = query->fields.insert.tbl_name;
     int* values = query->fields.insert.values;
 
-    // find table
-    Table* table = findTable(tbl_name);
-
     // if we didn't manage to find a table
+    Table* table = findTable(tbl_name);
     if (table == NULL) {
         send_message->status = OBJECT_NOT_FOUND;
         return "-- Unable to find specified table.";
@@ -248,8 +258,76 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
     send_message->status = OK_DONE;
     return "Successfully inserted new row.";
 }
+
 char* handleLoaderQuery(DbOperator* query, message* send_message) {
-    (void) query;
-    (void) send_message;
+    if (query == NULL || query->type != LOADER) {
+        send_message->status = QUERY_UNSUPPORTED;
+        return "Invalid query."; 
+    }
     return "Not implemented yet.";
+}
+
+char* handleSelectQuery(DbOperator* query, message* send_message) {
+    if (query == NULL || query->type != SELECT) {
+        send_message->status = QUERY_UNSUPPORTED;
+        return "Invalid query."; 
+    }
+
+    // retrieve params
+    SelectOperator select = query->fields.select;
+    char* db_name = select.db_name;
+    char* tbl_name = select.tbl_name;
+    char* col_name = select.col_name;
+    int minimum = select.minimum;
+    int maximum = select.maximum;
+    
+    // check database
+    if (strcmp(db_name, current_db->name) != 0) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Database not found.";
+    }
+
+    // if we didn't manage to find a table
+    Table* table = findTable(tbl_name);
+    if (table == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified table.";
+    }
+
+    // if we didn't manage to find a column
+    Column* column = findColumn(table, col_name);
+    if (column == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified column.";
+    }
+
+    // create a new GeneralizedColumnHandle
+    GeneralizedColumnHandle* new_handle = malloc(sizeof(GeneralizedColumnHandle));
+    GeneralizedColumnPointer new_pointer;
+    new_pointer.result = malloc(sizeof(Result));
+    new_pointer.result->data_type = INT;
+    new_pointer.result->num_tuples = 0;
+    new_pointer.result->payload = NULL;
+    GeneralizedColumn column = {
+        .column_type = RESULT,
+        .column_pointer = new_pointer
+    }
+    new_handle->generalized_column = column;
+
+    // scan through column and store all data in tuples
+    int capacity = 0;
+    int num_inserted = 0;
+    for (size_t i = 0; i < table->num_rows; i++) {
+        if (column->data[i] < minimum || column->data[i] > maximum)
+            continue;
+        if (new_pointer.result->num_tuples == capacity) {
+            capacity = (capacity == 0) ? 1 : 2 * capacity;
+            new_pointer.result->payload = realloc(sizeof(int) * capacity);
+        }
+        new_pointer->payload[num_inserted] = i;
+    }
+    new_pointer.result->num_tuples = num_inserted;
+
+    send_message->status = OK_DONE;
+    return "Successfully inserted new row.";
 }

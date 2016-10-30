@@ -63,6 +63,7 @@ typedef struct ClientContext {
     GeneralizedColumnHandle* chandle_table;
     int chandles_in_use;
     int chandle_slots;
+    int client_fd;
 } ClientContext;
 
 // ================ QUERIES ================
