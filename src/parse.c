@@ -11,6 +11,7 @@
 #include "parse/create.h"
 #include "parse/insert.h"
 #include "parse/select.h"
+#include "parse/print.h"
 
 /**
  * parse_command takes as input the send_message from the client and then
@@ -64,6 +65,10 @@ DbOperator* process_query(char* query, message* send_message) {
     if (strncmp(query, "select", 6) == 0) {
         query += 6;
         return parse_select(query, send_message);
+    }
+    if (strncmp(query, "print", 5) == 0) {
+        query += 5;
+        return parse_print(query, send_message);
     }
     return NULL;
 }

@@ -23,3 +23,4 @@ char* handleCreateQuery(DbOperator* query, message* send_message);
 char* handleInsertQuery(DbOperator* query, message* send_message);
 char* handleLoaderQuery(DbOperator* query, message* send_message);
 char* handleSelectQuery(DbOperator* query, message* send_message);
+char* handlePrintQuery(DbOperator* query, message* send_message);

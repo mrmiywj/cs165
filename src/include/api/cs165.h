@@ -98,7 +98,8 @@ typedef enum OperatorType {
     CREATE, 
     INSERT, 
     LOADER,
-    SELECT 
+    SELECT,
+    PRINT
 } OperatorType;
 typedef enum CreateType { CREATE_DATABASE, CREATE_TABLE, CREATE_COLUMN } CreateType;
 typedef struct CreateOperator {
@@ -121,11 +122,18 @@ typedef struct SelectOperator {
     int minimum;
     int maximum;
 } SelectOperator;
+typedef struct PrintOperator {
+    char* db_name;
+    char* tbl_name;
+    char* col_name;
+    char* handle;
+} PrintOperator;
 typedef union OperatorFields {
     CreateOperator create;
     InsertOperator insert;
     LoaderOperator loader;
     SelectOperator select;
+    PrintOperator print;
 } OperatorFields;
 
 typedef struct DbOperator {

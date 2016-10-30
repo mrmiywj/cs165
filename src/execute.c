@@ -362,3 +362,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     send_message->status = OK_DONE;
     return "Successfully inserted new row.";
 }
+
+char* handlePrintQuery(DbOperator* query, message* send_message) {
+    return NULL;
+}
