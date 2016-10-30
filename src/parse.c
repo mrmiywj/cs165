@@ -11,6 +11,7 @@
 #include "parse/create.h"
 #include "parse/insert.h"
 #include "parse/select.h"
+#include "parse/fetch.h"
 #include "parse/print.h"
 
 /**
@@ -30,17 +31,6 @@ DbOperator* parse_command(
         return NULL;
     }
 
-    char *equals_pointer = strchr(query_command, '=');
-    char *handle = query_command;
-    if (equals_pointer != NULL) {
-        // handle file table
-        *equals_pointer = '\0';
-        cs165_log(stdout, "FILE HANDLE: %s\n", handle);
-        query_command = ++equals_pointer;
-    } else {
-        handle = NULL;
-    }
-
     log_info("QUERY: %s", query_command);
     send_message->status = OK_WAIT_FOR_RESPONSE;
     query_command = trim_whitespace(query_command);
@@ -54,6 +44,17 @@ DbOperator* parse_command(
 }
 
 DbOperator* process_query(char* query, message* send_message) {
+    // check for variable name
+    char *equals_pointer = strchr(query, '=');
+    char *handle = query;
+    if (equals_pointer != NULL) {
+        // handle file table
+        *equals_pointer = '\0';
+        query = ++equals_pointer;
+    } else {
+        handle = NULL;
+    }
+
     if (strncmp(query, "create", 6) == 0) {
         query += 6;
         return parse_create(query, send_message);
@@ -64,7 +65,11 @@ DbOperator* process_query(char* query, message* send_message) {
     }
     if (strncmp(query, "select", 6) == 0) {
         query += 6;
-        return parse_select(query, send_message);
+        return parse_select(query, send_message, handle);
+    }
+    if (strncmp(query, "fetch", 5) == 0) {
+        query += 5;
+        return parse_fetch(query, send_message, handle);
     }
     if (strncmp(query, "print", 5) == 0) {
         query += 5;

@@ -79,10 +79,14 @@ void printDbOperator(DbOperator* query) {
             break;
         case PRINT:
             log_info("\tType: PRINT\n");
-            log_info("\t    DB: %s\n", fields.print.db_name);
-            log_info("\t    TBL: %s\n", fields.print.tbl_name);
-            log_info("\t    COL: %s\n", fields.print.col_name);
             log_info("\t    HANDLE: %s\n", fields.print.handle);
+            break;
+        case FETCH:
+            log_info("\tType: FETCH\n");
+            log_info("\t    DB: %s\n", fields.fetch.db_name);
+            log_info("\t    TBL: %s\n", fields.fetch.tbl_name);
+            log_info("\t    COL: %s\n", fields.fetch.col_name);
+            log_info("\t    HANDLE: %s\n", fields.fetch.handle);
             break;
         default:
             break;

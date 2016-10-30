@@ -27,18 +27,17 @@ DbOperator* parse_print(char* arguments, message* response) {
     
     // parse arguments
     char* token = strsep(&copy, ",");
-    if (token == NULL) {
+    if (token != NULL) {
         // invalid query format
         response->status = INCORRECT_FORMAT;
         return NULL;
     }
 
+    // copy now contains the handle of the object to print
+
     // create print operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
     dbo->type = PRINT;
-    dbo->fields.print.col_name = token;
-    dbo->fields.print.db_name = strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.print.tbl_name = strsep(&dbo->fields.select.col_name, ".");
     dbo->fields.print.handle = copy;
     return dbo;
 }

@@ -1,10 +1,11 @@
 #include <string.h>
 #include <stdio.h>
-#include <limits.h>
 
-#include "parse/select.h"
+#include "parse/create.h"
+#include "util/log.h"
+#include "util/strmanip.h"
 
-DbOperator* parse_select(char* arguments, message* response, char* handle) {
+DbOperator* parse_fetch(char* arguments, message* response, char* handle) {
     if (response == NULL)
         return NULL;
     if (arguments == NULL || *arguments != '(') {
@@ -34,22 +35,11 @@ DbOperator* parse_select(char* arguments, message* response, char* handle) {
 
     // create select operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
-    dbo->type = SELECT;
-    dbo->fields.select.col_name = token;
-    dbo->fields.select.db_name = strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.select.tbl_name = strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.select.var_name = handle;
-    char* lower = strsep(&copy, ",");
-    char* upper = copy;
-    if (strcmp("null", lower) == 0) {
-        dbo->fields.select.minimum = INT_MIN;
-    } else {
-        dbo->fields.select.minimum = atoi(lower);
-    }
-    if (strcmp("null", upper) == 0) {
-        dbo->fields.select.maximum = INT_MAX;
-    } else {
-        dbo->fields.select.maximum = atoi(upper);
-    }
+    dbo->type = FETCH;
+    dbo->fields.fetch.col_name = token;
+    dbo->fields.fetch.db_name = strsep(&dbo->fields.select.col_name, ".");
+    dbo->fields.fetch.tbl_name = strsep(&dbo->fields.select.col_name, ".");
+    dbo->fields.fetch.source = copy;
+    dbo->fields.fetch.target = handle;
     return dbo;
 }
