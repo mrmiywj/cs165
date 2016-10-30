@@ -22,15 +22,14 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "util/const.h"
-#include "parse/parse.h"
 #include "api/cs165.h"
+#include "api/context.h"
+#include "parse/parse.h"
+#include "query/execute.h"
+#include "util/const.h"
 #include "util/message.h"
 #include "util/log.h"
-#include "query/execute.h"
-
 #include "util/debug.h"
-#include "query/execute.h"
 
 #define DEFAULT_QUERY_BUFFER_SIZE 1024
 
@@ -50,7 +49,12 @@ void handle_client(int client_socket) {
     message recv_message;
 
     // create the client context here
-    ClientContext* client_context = NULL;
+    ClientContext* new_context = malloc(sizeof(ClientContext));
+    new_context->chandle_table = NULL;
+    new_context->chandles_in_use = 0;
+    new_context->chandle_slots = 0;
+    new_context->client_fd = client_socket;
+    insertContext(new_context);
 
     // Continually receive messages from client and execute queries.
     // 1. Parse the command
@@ -73,7 +77,7 @@ void handle_client(int client_socket) {
             recv_message.payload[recv_message.length] = '\0';
 
             // 1. Parse command
-            DbOperator* query = parse_command(recv_message.payload, &send_message, client_socket, client_context);
+            DbOperator* query = parse_command(recv_message.payload, &send_message, client_socket, new_context);
 
             // 2. Handle request
             char* result = executeDbOperator(query, &send_message);
@@ -93,6 +97,7 @@ void handle_client(int client_socket) {
         }
     } while (!done);
 
+    deleteContext(new_context);
     log_info("Connection closed at socket %d!\n", client_socket);
     close(client_socket);
 }

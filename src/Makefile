@@ -53,7 +53,7 @@ $(DEPSDIR)/stamp $(BUILDSTAMP):
 
 INCL_UNIVERSAL = log.o strmanip.o
 INCL_CLIENT = 
-INCL_SERVER = cleanup.o create.o db_io.o debug.o execute.o insert.o parse.o select.o
+INCL_SERVER = cleanup.o context.o create.o db_io.o debug.o execute.o insert.o parse.o select.o
 
 client: client.o $(INCL_UNIVERSAL) $(INCL_CLIENT)
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)

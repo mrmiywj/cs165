@@ -1,9 +1,12 @@
 #include "api/db_io.h"
+#include "api/context.h"
 #include "query/execute.h"
 #include "util/debug.h"
 #include "util/cleanup.h"
 
 Db* current_db = NULL;
+ClientContext** pool = NULL;
+size_t contextCount = 0;
 
 Table* findTable(char* tbl_name) {
     if (current_db == NULL || tbl_name == NULL)
@@ -302,7 +305,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     }
 
     // create a new GeneralizedColumnHandle
-    GeneralizedColumnHandle* new_handle = malloc(sizeof(GeneralizedColumnHandle));
+    GeneralizedColumnHandle new_handle;
     GeneralizedColumnPointer new_pointer;
     new_pointer.result = malloc(sizeof(Result));
     new_pointer.result->data_type = INT;
@@ -312,7 +315,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
         .column_type = RESULT,
         .column_pointer = new_pointer
     };
-    new_handle->generalized_column = gen_column;
+    new_handle.generalized_column = gen_column;
 
     // scan through column and store all data in tuples
     int capacity = 0;
@@ -327,7 +330,6 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             if (new_data == NULL) {
                 free(new_data);
                 free(new_pointer.result);
-                free(new_handle);
                 send_message->status = EXECUTION_ERROR;
                 return "-- Error calculating result array.";
             }
@@ -339,11 +341,23 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     new_pointer.result->payload = data;
     new_pointer.result->num_tuples = num_inserted;
 
-    printf("Selected values: [ ");
-    for (int i = 0; i < num_inserted; i++) {
-        printf("%i ", data[i]);
+    // search for context and add to the list of variables
+    ClientContext* context = searchContext(query->client_fd);
+    if (context == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Error finding client context for search.";
     }
-    printf("]\n");
+    if (context->chandles_in_use == context->chandle_slots) {
+        int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
+        GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
+        if (new_table == NULL) {
+            send_message->status = EXECUTION_ERROR;
+            return "-- Problem inserting new handle into client context.";
+        }
+        context->chandle_table = new_table;
+        context->chandle_slots = new_size;
+    }
+    context->chandle_table[context->chandles_in_use++] = new_handle;
 
     send_message->status = OK_DONE;
     return "Successfully inserted new row.";
