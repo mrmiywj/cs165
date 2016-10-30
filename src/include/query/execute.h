@@ -22,3 +22,4 @@ char* executeDbOperator(DbOperator* query, message* send_message);
 char* handleCreateQuery(DbOperator* query, message* send_message);
 char* handleInsertQuery(DbOperator* query, message* send_message);
 char* handleLoaderQuery(DbOperator* query, message* send_message);
+char* handleSelectQuery(DbOperator* query, message* send_message);

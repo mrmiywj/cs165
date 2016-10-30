@@ -36,13 +36,19 @@ DbOperator* parse_select(char* arguments, message* response) {
     DbOperator* dbo = malloc(sizeof(DbOperator));
     dbo->type = SELECT;
     dbo->fields.select.col_name = token;
-    dbo->fields.select.tbl_name = strsep(&dbo->fields.select.col_name, ".");
     dbo->fields.select.db_name = strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.select.minimum = atoi(strsep(&copy, ","));
-    if (dbo->fields.select.minimum == 0)
+    dbo->fields.select.tbl_name = strsep(&dbo->fields.select.col_name, ".");
+    char* lower = strsep(&copy, ",");
+    char* upper = copy;
+    if (strcmp("null", lower) == 0) {
         dbo->fields.select.minimum = INT_MIN;
-    dbo->fields.select.maximum = atoi(copy);
-    if (dbo->fields.select.maximum == 0)
+    } else {
+        dbo->fields.select.minimum = atoi(lower);
+    }
+    if (strcmp("null", upper) == 0) {
         dbo->fields.select.maximum = INT_MAX;
+    } else {
+        dbo->fields.select.maximum = atoi(upper);
+    }
     return dbo;
 }

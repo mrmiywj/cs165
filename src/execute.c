@@ -308,25 +308,42 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     new_pointer.result->data_type = INT;
     new_pointer.result->num_tuples = 0;
     new_pointer.result->payload = NULL;
-    GeneralizedColumn column = {
+    GeneralizedColumn gen_column = {
         .column_type = RESULT,
         .column_pointer = new_pointer
-    }
-    new_handle->generalized_column = column;
+    };
+    new_handle->generalized_column = gen_column;
 
     // scan through column and store all data in tuples
     int capacity = 0;
     int num_inserted = 0;
+    int* data = NULL;
     for (size_t i = 0; i < table->num_rows; i++) {
         if (column->data[i] < minimum || column->data[i] > maximum)
             continue;
-        if (new_pointer.result->num_tuples == capacity) {
+        if (num_inserted == capacity) {
             capacity = (capacity == 0) ? 1 : 2 * capacity;
-            new_pointer.result->payload = realloc(sizeof(int) * capacity);
+            int* new_data = realloc(data, sizeof(int) * capacity);
+            if (new_data == NULL) {
+                free(new_data);
+                free(new_pointer.result);
+                free(new_handle);
+                send_message->status = EXECUTION_ERROR;
+                return "-- Error calculating result array.";
+            }
+            data = new_data;
         }
-        new_pointer->payload[num_inserted] = i;
+        data[num_inserted] = i;
+        num_inserted++;
     }
+    new_pointer.result->payload = data;
     new_pointer.result->num_tuples = num_inserted;
+
+    printf("Selected values: [ ");
+    for (int i = 0; i < num_inserted; i++) {
+        printf("%i ", data[i]);
+    }
+    printf("]\n");
 
     send_message->status = OK_DONE;
     return "Successfully inserted new row.";
