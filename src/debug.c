@@ -149,13 +149,17 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
 
 /* Prints a description of a ClientContext object. */
 void printContext(ClientContext* context) {
+    if (context == NULL) {
+        log_info("Client context: NULL\n");
+        return;
+    }
     log_info("Client context at %p\n", context);
     log_info("    # handles: %i\n", context->chandles_in_use);
-    log_info("    capacity: %i\n", context->chandle_slots);
+    log_info("    capacity:  %i\n", context->chandle_slots);
     log_info("    client fd: %i\n", context->client_fd);
     for (int i = 0; i < context->chandles_in_use; i++) {
         GeneralizedColumnHandle handle = context->chandle_table[i];
-        log_info("   == handle %i (%s):\n", i, handle.name);
+        log_info("    -> handle %i (%s):\n", i, handle.name);
         GeneralizedColumn gcol = handle.generalized_column;
         switch (gcol.column_type) {
             case RESULT: {
@@ -208,4 +212,5 @@ void printContext(ClientContext* context) {
                 break;
         }
     }
+    log_info("\n");
 }

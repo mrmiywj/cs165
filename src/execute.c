@@ -59,13 +59,11 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
     }
 
     printDatabase(current_db);
-
+    
+    free(query);
     if (res != NULL)
         return res;
-
-    free(query);
-    
-    return "Executed query successfully.";
+    return NULL;
 }
 
 // ================ HANDLERS ================
@@ -370,7 +368,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
 }
 
 char* handleFetchQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != SELECT) {
+    if (query == NULL || query->type != FETCH) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }
@@ -459,84 +457,82 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
     }
 
     // // retrieve params
-    // PrintOperator print = query->fields.print;
-    // char* handle = print.handle;
+    PrintOperator print = query->fields.print;
+    char* handle = print.handle;
     
-    // // check database
-    // if (strcmp(db_name, current_db->name) != 0) {
-    //     send_message->status = OBJECT_NOT_FOUND;
-    //     return "-- Database not found.";
-    // }
+    // get context for current client
+    ClientContext* context = searchContext(query->client_fd);
+    if (context == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find context for current client.";
+    }
 
-    // // if we didn't manage to find a table
-    // Table* table = findTable(tbl_name);
-    // if (table == NULL) {
-    //     send_message->status = OBJECT_NOT_FOUND;
-    //     return "-- Unable to find specified table.";
-    // }
+    // search for result in context
+    Result* result = findHandle(context, handle)->generalized_column.column_pointer.result;
+    if (result == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified select source.";
+    }
 
-    // // if we didn't manage to find a column
-    // Column* column = findColumn(table, col_name);
-    // if (column == NULL) {
-    //     send_message->status = OBJECT_NOT_FOUND;
-    //     return "-- Unable to find specified column.";
-    // }
+    // create string payload to return
+    int length = 0;
+    char buf[64];
+    switch (result->data_type) {
+        case INT: {
+            int* data = (int*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(buf, "%i", data[i]);
+                length += strlen(buf) + 1;
+            }
+            break;
+        }
+        case LONG: {
+            long* data = (long*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(buf, "%ld", data[i]);
+                length += strlen(buf) + 1;
+            }
+            break;
+        }
+        case FLOAT: {
+            float* data = (float*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(buf, "%f", data[i]);
+                length += strlen(buf) + 1;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    char* values = malloc(sizeof(char) * (length + 1));
+    switch (result->data_type) {
+        case INT: {
+            int* data = (int*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(values, "%s%i\n", values, data[i]);
+            }
+            break;
+        }
+        case LONG: {
+            long* data = (long*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(values, "%s%ld\n", values, data[i]);
+            }
+            break;
+        }
+        case FLOAT: {
+            float* data = (float*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(values, "%s%f\n", values, data[i]);
+            }
+            break;
+        }
+    }
+    values[length] = '\0';
+    printf("result printf: %s\n", values);
 
-    // create a new GeneralizedColumnHandle
-    // GeneralizedColumnHandle new_handle;
-    // GeneralizedColumnPointer new_pointer;
-    // new_pointer.result = malloc(sizeof(Result));
-    // new_pointer.result->data_type = INT;
-    // new_pointer.result->num_tuples = 0;
-    // new_pointer.result->payload = NULL;
-    // GeneralizedColumn gen_column = {
-    //     .column_type = RESULT,
-    //     .column_pointer = new_pointer
-    // };
-    // new_handle.generalized_column = gen_column;
-
-    // // scan through column and store all data in tuples
-    // int capacity = 0;
-    // int num_inserted = 0;
-    // int* data = NULL;
-    // for (size_t i = 0; i < table->num_rows; i++) {
-    //     if (column->data[i] < minimum || column->data[i] > maximum)
-    //         continue;
-    //     if (num_inserted == capacity) {
-    //         capacity = (capacity == 0) ? 1 : 2 * capacity;
-    //         int* new_data = realloc(data, sizeof(int) * capacity);
-    //         if (new_data == NULL) {
-    //             free(new_data);
-    //             free(new_pointer.result);
-    //             send_message->status = EXECUTION_ERROR;
-    //             return "-- Error calculating result array.";
-    //         }
-    //         data = new_data;
-    //     }
-    //     data[num_inserted] = i;
-    //     num_inserted++;
-    // }
-    // new_pointer.result->payload = data;
-    // new_pointer.result->num_tuples = num_inserted;
-
-    // // search for context and add to the list of variables
-    // ClientContext* context = searchContext(query->client_fd);
-    // if (context == NULL) {
-    //     send_message->status = OBJECT_NOT_FOUND;
-    //     return "-- Error finding client context for search.";
-    // }
-    // if (context->chandles_in_use == context->chandle_slots) {
-    //     int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
-    //     GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
-    //     if (new_table == NULL) {
-    //         send_message->status = EXECUTION_ERROR;
-    //         return "-- Problem inserting new handle into client context.";
-    //     }
-    //     context->chandle_table = new_table;
-    //     context->chandle_slots = new_size;
-    // }
-    // context->chandle_table[context->chandles_in_use++] = new_handle;
-
-    send_message->status = OK_DONE;
-    return "Successfully inserted new row.";
+    send_message->status = OK_WAIT_FOR_RESPONSE;
+    send_message->length = length;
+    return values;
 }

@@ -24,16 +24,6 @@ DbOperator* parse_print(char* arguments, message* response) {
         return NULL;
     }
     copy[len - 1] = '\0';
-    
-    // parse arguments
-    char* token = strsep(&copy, ",");
-    if (token != NULL) {
-        // invalid query format
-        response->status = INCORRECT_FORMAT;
-        return NULL;
-    }
-
-    // copy now contains the handle of the object to print
 
     // create print operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));

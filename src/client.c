@@ -64,9 +64,6 @@ int main(void)
         exit(1);
     }
 
-    message send_message;
-    message recv_message;
-
     // Always output an interactive marker at the start of each command if the
     // input is from stdin. Do not output if piped in from file or from other fd
     char* prefix = "";
@@ -81,6 +78,7 @@ int main(void)
     // 1. output interactive marker
     // 2. read from stdin until eof.
     char read_buffer[DEFAULT_STDIN_BUFFER_SIZE];
+    message send_message;
     send_message.payload = read_buffer;
 
     while (printf("%s", prefix), output_str = fgets(read_buffer,
@@ -89,6 +87,8 @@ int main(void)
             log_err("fgets failed.\n");
             break;
         }
+
+        message recv_message;
 
         // Only process input that is greater than 1 character.
         // Ignore things such as new lines.
@@ -110,8 +110,8 @@ int main(void)
 
             // Always wait for server response (even if it is just an OK message)
             if ((len = recv(client_socket, &(recv_message), sizeof(message), 0)) > 0) {
-                if (recv_message.status == OK_WAIT_FOR_RESPONSE &&
-                    (int) recv_message.length > 0) {
+                printf("-- client recv_message: status %i, length %i\n", recv_message.status, (int) recv_message.length);
+                if (recv_message.status == OK_WAIT_FOR_RESPONSE && (int) recv_message.length > 0) {
                     // Calculate number of bytes in response package
                     int num_bytes = (int) recv_message.length;
                     char payload[num_bytes + 1];
@@ -119,7 +119,7 @@ int main(void)
                     // Receive the payload and print it out
                     if ((len = recv(client_socket, payload, num_bytes, 0)) > 0) {
                         payload[num_bytes] = '\0';
-                        printf("%s\n", payload);
+                        printf("%s", payload);
                     }
                 }
             }

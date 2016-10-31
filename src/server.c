@@ -75,13 +75,19 @@ void handle_client(int client_socket) {
             length = recv(client_socket, recv_buffer, recv_message.length,0);
             recv_message.payload = recv_buffer;
             recv_message.payload[recv_message.length] = '\0';
+            recv_message.status = OK_DONE;
+            recv_message.length = 0;
 
             // 1. Parse command
+            send_message.status = OK_DONE;
+            send_message.length = 0;
+            send_message.payload = NULL;
             DbOperator* query = parse_command(recv_message.payload, &send_message, client_socket, new_context);
 
             // 2. Handle request
             char* result = executeDbOperator(query, &send_message);
             send_message.length = strlen(result);
+            printf("Server response: \"%s\", length %i, status %i\n", result, send_message.length, send_message.status);
 
             // 3. Send status of the received message (OK, UNKNOWN_QUERY, etc)
             if (send(client_socket, &(send_message), sizeof(message), 0) == -1) {
@@ -90,10 +96,15 @@ void handle_client(int client_socket) {
             }
 
             // 4. Send response of request
-            if (send(client_socket, result, send_message.length, 0) == -1) {
-                log_err("Failed to send message.");
-                exit(1);
+            if (send_message.status == OK_WAIT_FOR_RESPONSE && (int) send_message.length > 0) {
+                if (send(client_socket, result, send_message.length, 0) == -1) {
+                    log_err("Failed to send message.");
+                    exit(1);
+                }
             }
+            
+            // REMOVE: print context every call
+            printContext(new_context);
         }
     } while (!done);
 
