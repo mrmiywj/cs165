@@ -502,6 +502,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
             break;
     }
     char* values = malloc(sizeof(char) * (length + 1));
+    values[0] = '\0';
     switch (result->data_type) {
         case INT: {
             int* data = (int*) result->payload;
