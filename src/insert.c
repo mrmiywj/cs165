@@ -22,7 +22,7 @@ DbOperator* parse_insert(char* arguments, message* response) {
     table_name++;
     
     // create insert operator object
-    DbOperator* dbo = malloc(sizeof(DbOperator));
+    DbOperator* dbo = calloc(1, sizeof(DbOperator));
     dbo->type = INSERT;
     dbo->fields.insert.tbl_name = table_name;
     
@@ -36,8 +36,17 @@ DbOperator* parse_insert(char* arguments, message* response) {
         cpy++;
     }
     dbo->fields.insert.num_values = columns_inserted;
-    dbo->fields.insert.values = malloc(sizeof(int) * columns_inserted);
-    
+    if (dbo->fields.insert.values == NULL) {
+        dbo->fields.insert.values = calloc(columns_inserted, sizeof(int));
+    } else {
+        int* new_data = realloc(dbo->fields.insert.values, sizeof(int) * columns_inserted);
+        if (new_data == NULL) {
+            response->status = EXECUTION_ERROR;
+            return NULL;
+        }
+        dbo->fields.insert.values = new_data;
+    }   
+ 
     // iterate down values and insert one by one
     int index = 0;
     char* token = NULL;

@@ -121,7 +121,7 @@ bool startupDb() {
     // reading buffer
     char buf[MAX_SIZE_NAME + 20];
     // initialize current_db
-    current_db = malloc(sizeof(Db));
+    current_db = calloc(1, sizeof(Db));
 
     // db values
     Table** tables = NULL;
