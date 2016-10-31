@@ -60,7 +60,7 @@ bool loadColumnData() {
         }
     }
 
-    log_info("-- Loaded column data successfully.");
+    log_info("-- Loaded column data successfully.\n");
     printDatabase(current_db);
 
     return true;
@@ -189,7 +189,7 @@ bool startupDb() {
     
     fclose(fp);
 
-    log_info("-- Loaded db metadata.");
+    log_info("-- Loaded db metadata.\n");
     printDatabase(current_db);
     return loadColumnData();
 }

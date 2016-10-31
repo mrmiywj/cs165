@@ -152,6 +152,10 @@ void handlePipeQuery(char* query, int socket) {
 
     // read database/table/column
     while (fgets(buf, sizeof(buf), fp)) {
+        if (strncmp(buf, "load", 4) == 0) {
+            handleLoadQuery(buf, socket);
+            continue;
+        }
         size_t len = strlen(buf);
         if (buf[len - 1] == '\n')
             buf[len - 1] = '\0';
