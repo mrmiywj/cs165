@@ -161,7 +161,7 @@ int main(void)
             log_err("fgets failed.\n");
             break;
         }
-        log_info("-- received client query %s\n", read_buffer);
+        log_info("-- received client query %s", read_buffer);
 
         // handle load messages differently from the rest
         if (strncmp(read_buffer, "load", 4) == 0) {
