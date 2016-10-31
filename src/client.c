@@ -23,6 +23,7 @@
 #include "util/const.h"
 #include "util/message.h"
 #include "util/log.h"
+#include "util/strmanip.h"
 
 #define DEFAULT_STDIN_BUFFER_SIZE 1024
 
@@ -57,8 +58,77 @@ int connect_client() {
     return client_socket;
 }
 
-void handleLoadQuery(char* query) {
-    return;
+void sendMessage(message send_message, int socket) {
+    if (send(socket, &send_message, sizeof(message), 0) == -1) {
+        log_err("unable to send message metadata");
+        exit(1);
+    } 
+    if (send(socket, send_message.payload, send_message.length, 0) == -1) {
+        log_err("unable to send message content");
+        exit(1);
+    }
+}
+
+void handleLoadQuery(char* query, int socket) {
+    // extract message path
+    char* path = query + 5;
+    path = trim_whitespace(path);
+    path = trim_quotes(path);
+    size_t len = strlen(path);
+    if (path[len - 1] != ')')
+        return;
+    path[len - 1] = '\0';
+
+    // open file
+    FILE* fp = fopen(path, "r");
+    if (fp == NULL)
+        return;
+    char buf[1024];
+    message send_message;
+    send_message.status = 0;
+
+    // read database/table/column
+    if (!fgets(buf, sizeof(buf), fp))
+        return;
+    char* col_name = malloc((strlen(buf) + 1) * sizeof(char));
+    strcpy(col_name, buf);
+    char* db_name = strsep(&col_name, ".");
+    char* tbl_name = strsep(&col_name, ".");
+    if (col_name == NULL || db_name == NULL || tbl_name == NULL) {
+        log_err("load file improper format");
+    }
+    log_info("-- loading: %s/%s/%s\n", db_name, tbl_name, col_name);
+
+    // ask server to create these objects
+    // char* query_db = malloc(sizeof(char) * (14 + strlen(db_name)));
+    // sprintf(query_db, "create(db,\"%s\")", db_name);
+    // send_message.length = 13 + strlen(db_name);
+    // send_message.payload = query_db;
+    // sendMessage(send_message, socket);
+    // char* query_tbl = malloc(sizeof(char) * (18 + strlen(db_name) + strlen(tbl_name)));
+    // sprintf(query_tbl, "create(tbl,\"%s\",%s,1)", tbl_name, db_name);
+    // send_message.length = 17 + strlen(db_name) + strlen(tbl_name);
+    // send_message.payload = query_tbl;
+    // sendMessage(send_message, socket);
+    // char* query_col = malloc(sizeof(char) * (17 + strlen(db_name) + strlen(tbl_name) + strlen(col_name)));
+    // sprintf(query_col, "create(col,\"%s\",%s.%s)", col_name, db_name, tbl_name);
+    // send_message.length = 16 + strlen(db_name) + strlen(tbl_name) + strlen(col_name);
+    // send_message.payload = query_col;
+    // sendMessage(send_message, socket);
+
+    // read all rows from file and send to server
+    size_t query_size = 22 + strlen(db_name) + strlen(tbl_name) + 1024;
+    char* query_insert = malloc(sizeof(char) * query_size);
+    while (fgets(buf, sizeof(buf), fp)) {
+        size_t len = strlen(buf);
+        if (buf[len - 1] == '\n')
+            buf[len - 1] = '\0';
+            len--;
+        sprintf(query_insert, "relational_insert(%s.%s,%s)", db_name, tbl_name, buf);
+        send_message.length = 21 + strlen(db_name) + strlen(tbl_name) + len;
+        send_message.payload = query_insert;
+        sendMessage(send_message, socket); 
+    }
 }
 
 int main(void)
@@ -91,50 +161,41 @@ int main(void)
             log_err("fgets failed.\n");
             break;
         }
-
         log_info("-- received client query %s\n", read_buffer);
 
         // handle load messages differently from the rest
         if (strncmp(read_buffer, "load", 4) == 0) {
-            handleLoadQuery(read_buffer);
+            handleLoadQuery(read_buffer, client_socket);
             continue;
         }
 
         message recv_message;
+        // check message length and send
         send_message.length = strlen(read_buffer);
-        if (send_message.length > 1) {
-            // Send the message_header, which tells server payload size
-            if (send(client_socket, &(send_message), sizeof(message), 0) == -1) {
-                log_err("Failed to send message header.");
-                exit(1);
-            }
+        if (send_message.length <= 0)
+            continue;
+        sendMessage(send_message, client_socket);
 
-            // Send the payload (query) to server
-            if (send(client_socket, send_message.payload, send_message.length, 0) == -1) {
-                log_err("Failed to send query payload.");
-                exit(1);
-            }
+        // retrieve response from server
+        if ((len = recv(client_socket, &(recv_message), sizeof(message), 0)) <= 0) {
+            if (len < 0)
+                log_err("Failed to receive message.");
+            else
+                log_info("Server closed connection\n");
+            exit(1);
+        }
+        
+        // handle server response
+        log_info("-- client recv_message: status %i, length %i\n", recv_message.status, (int) recv_message.length);
+        if (recv_message.status == OK_WAIT_FOR_RESPONSE && (int) recv_message.length > 0) {
+            // Calculate number of bytes in response package
+            int num_bytes = (int) recv_message.length;
+            char payload[num_bytes + 1];
 
-            // Always wait for server response (even if it is just an OK message)
-            if ((len = recv(client_socket, &(recv_message), sizeof(message), 0)) <= 0) {
-                if (len < 0)
-                    log_err("Failed to receive message.");
-                else
-                    log_info("Server closed connection\n");
-                exit(1);
-            }
-
-            log_info("-- client recv_message: status %i, length %i\n", recv_message.status, (int) recv_message.length);
-            if (recv_message.status == OK_WAIT_FOR_RESPONSE && (int) recv_message.length > 0) {
-                // Calculate number of bytes in response package
-                int num_bytes = (int) recv_message.length;
-                char payload[num_bytes + 1];
-
-                // Receive the payload and print it out
-                if ((len = recv(client_socket, payload, num_bytes, 0)) > 0) {
-                    payload[num_bytes] = '\0';
-                    printf("%s", payload);
-                }
+            // Receive the payload and print it out
+            if ((len = recv(client_socket, payload, num_bytes, 0)) > 0) {
+                payload[num_bytes] = '\0';
+                printf("%s", payload);
             }
         }
     }
