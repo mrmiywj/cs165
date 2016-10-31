@@ -66,6 +66,12 @@ void handle_client(int client_socket) {
         recv_message.status = OK_DONE;
         recv_message.length = 0;
 
+        // check for shutdown
+        if (strncmp(recv_message.payload, "shutdown", 8) == 0) {
+            log_info("-- Shutting down!\n");
+            break;
+        }
+
         // parse command for content
         send_message.status = OK_DONE;
         send_message.length = 0;
