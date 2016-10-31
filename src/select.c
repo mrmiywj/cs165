@@ -25,7 +25,7 @@ DbOperator* parse_select(char* arguments, message* response, char* handle) {
     copy[len - 1] = '\0';
     
     // parse arguments
-    char* token = strsep(&copy, ",");
+    char* token = (char*) strsep(&copy, ",");
     if (token == NULL) {
         // invalid query format
         response->status = INCORRECT_FORMAT;
@@ -36,10 +36,10 @@ DbOperator* parse_select(char* arguments, message* response, char* handle) {
     DbOperator* dbo = malloc(sizeof(DbOperator));
     dbo->type = SELECT;
     dbo->fields.select.col_name = token;
-    dbo->fields.select.db_name = strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.select.tbl_name = strsep(&dbo->fields.select.col_name, ".");
+    dbo->fields.select.db_name = (char*) strsep(&dbo->fields.select.col_name, ".");
+    dbo->fields.select.tbl_name = (char*) strsep(&dbo->fields.select.col_name, ".");
     dbo->fields.select.var_name = handle;
-    char* lower = strsep(&copy, ",");
+    char* lower = (char*) strsep(&copy, ",");
     char* upper = copy;
     if (strcmp("null", lower) == 0) {
         dbo->fields.select.minimum = INT_MIN;

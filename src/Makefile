@@ -6,7 +6,7 @@
 all: client server
 
 # C-compiler settings
-CC = gcc -std=c99 -g -ggdb3
+CC = gcc -std=c99 -g -ggdb3 -D _BSD_SOURCE
 
 # Default optimization level
 O ?= 0
