@@ -1,5 +1,5 @@
-#ifndef MESSAGE_H__
-#define MESSAGE_H__
+#ifndef MESSAGE_H_
+#define MESSAGE_H_
 
 // mesage_status defines the status of the previous request.
 // FEEL FREE TO ADD YOUR OWN OR REMOVE ANY THAT ARE UNUSED IN YOUR PROJECT

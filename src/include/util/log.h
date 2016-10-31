@@ -4,8 +4,8 @@
 // Provides utility and helper functions that may be useful throughout.
 // Includes debugging tools.
 
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef UTILS_LOG_H
+#define UTILS_LOG_H
 
 #include <stdio.h>
 
@@ -22,4 +22,4 @@ void log_err(const char *format, ...);
 // Usage: log_info("Command received: %s", command_string);
 void log_info(const char *format, ...);
 
-#endif /* __UTILS_H__ */
+#endif

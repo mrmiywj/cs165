@@ -1,5 +1,5 @@
-#ifndef PARSE_H__
-#define PARSE_H__
+#ifndef PARSE_H_
+#define PARSE_H_
 #include "api/cs165.h"
 #include "util/message.h"
 

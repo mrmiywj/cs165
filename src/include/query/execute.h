@@ -1,3 +1,6 @@
+#ifndef EXECUTE_H
+#define EXECUTE_H
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -25,3 +28,5 @@ char* handleLoaderQuery(DbOperator* query, message* send_message);
 char* handleSelectQuery(DbOperator* query, message* send_message);
 char* handleFetchQuery(DbOperator* query, message* send_message);
 char* handlePrintQuery(DbOperator* query, message* send_message);
+
+#endif

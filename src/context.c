@@ -1,7 +1,10 @@
 // Abstraction layer between set of client contexts and rest of database
 
+#include <string.h>
 #include "api/context.h"
 
+// should probably replace later with a binary tree of 
+// some sort if we have lots of clients
 typedef struct LinkedList {
     ClientContext* context;
     struct LinkedList* next;

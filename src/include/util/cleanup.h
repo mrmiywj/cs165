@@ -1,5 +1,5 @@
-#ifndef DB_CATALOG_H
-#define DB_CATALOG_H
+#ifndef CLEANUP_H
+#define CLEANUP_H
 
 #include "api/cs165.h"
 
