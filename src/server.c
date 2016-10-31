@@ -72,6 +72,8 @@ void handle_client(int client_socket) {
             break;
         }
 
+        log_info("-- Received query from client: \"%s\"", recv_message.payload);
+
         // parse command for content
         send_message.status = OK_DONE;
         send_message.length = 0;

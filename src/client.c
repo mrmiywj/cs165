@@ -184,6 +184,8 @@ void handlePipeQuery(char* query, int socket) {
             handleLoadQuery(buf, socket);
             continue;
         }
+        if (strncmp(buf, "--", 2) == 0)
+            continue;
         size_t len = strlen(buf);
         if (buf[len - 1] == '\n')
             buf[len - 1] = '\0';
