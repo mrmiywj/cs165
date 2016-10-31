@@ -75,7 +75,7 @@ bool writeColumnData() {
             Column* curr_col = curr_table->columns[j];
             sprintf(path, "%s%s/%s/%s", DATA_PATH, current_db->name, curr_table->name, curr_col->name);
 
-            FILE* fp = fopen(path, "ab+");
+            FILE* fp = fopen(path, "w+");
             if (fp == NULL)
                 return false;
             
@@ -217,6 +217,7 @@ bool writeDb() {
                 return false;
         }
     }
+    
     fclose(fp);
     return writeColumnData();
 }
