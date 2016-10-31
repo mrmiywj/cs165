@@ -1,10 +1,96 @@
 #include <stdio.h>
 
 #include "api/persist.h"
+#include "api/db_io.h"
 #include "query/execute.h"
 #include "util/debug.h"
 
 extern Db* current_db;
+
+bool loadColumnData() {
+    char path[MAX_SIZE_NAME * 3 + DATA_PATH_LENGTH + 3];
+    char buf[1024];
+    // iterate over every column
+    for (size_t i = 0; i < current_db->num_tables; i++) {
+        Table* curr_table = current_db->tables[i];
+        for (size_t j = 0; j < curr_table->col_count; j++) {
+            Column* curr_col = curr_table->columns[j];
+            sprintf(path, "%s%s/%s/%s", DATA_PATH, current_db->name, curr_table->name, curr_col->name);
+            // REMOVE
+            printf("Reading in column from path %s now...\n", path);
+
+            // column data trackers
+            size_t data_count = 0;
+            size_t data_capacity = 0;
+            int* data = NULL; 
+
+            FILE* fp = fopen(path, "r");
+            if (fp == NULL)
+                return false;
+            
+            // iterate over all data in file
+            while (fgets(buf, sizeof(buf), fp)) {
+                // remove \n if necessary
+                size_t len = strlen(buf);
+                if (buf[len - 1] == '\n')
+                    buf[len - 1] = '\0';
+                else
+                    buf[len] = '\0';
+                
+                // check capacity
+                if (data_count >= data_capacity) {
+                    size_t new_size = (data_capacity == 0) ? 1 : 2 * data_capacity;
+                    if (data == NULL) {
+                        data = malloc(sizeof(int) * new_size);
+                    } else {
+                        int* new_data = realloc(data, sizeof(int) * new_size);
+                        if (new_data == NULL)
+                            return false;
+                        data = new_data;
+                    }
+                    data_capacity = new_size;
+                }
+
+                // insert new int value
+                data[data_count++] = atoi(buf);
+            }
+            
+            // store new data in column
+            curr_col->data = data;
+        }
+    }
+
+    printDatabase(current_db);
+
+    return true;
+}
+
+bool writeColumnData() {
+    char path[MAX_SIZE_NAME * 3 + DATA_PATH_LENGTH + 3];
+    // iterate over every column
+    for (size_t i = 0; i < current_db->num_tables; i++) {
+        Table* curr_table = current_db->tables[i];
+        for (size_t j = 0; j < curr_table->col_count; j++) {
+            Column* curr_col = curr_table->columns[j];
+            sprintf(path, "%s%s/%s/%s", DATA_PATH, current_db->name, curr_table->name, curr_col->name);
+            // REMOVE
+            printf("Writing column to path %s now...\n", path);
+
+            FILE* fp = fopen(path, "ab+");
+            if (fp == NULL)
+                return false;
+            
+            // iterate over all data in file
+            for (size_t k = 0; k < curr_table->num_rows; k++) {
+                if (fprintf(fp, "%i\n", curr_col->data[k]) < 0)
+                    return false;
+            }
+
+            fclose(fp);
+        }
+    }
+    return true;
+}
 
 bool startupDb() {
     // open file for reading
@@ -26,7 +112,6 @@ bool startupDb() {
     size_t col_capacity = 0;
 
     // iterate through file until EOF
-    size_t len;
     while (fgets(buf, sizeof(buf), fp)) {
         size_t len = strlen(buf);
         if (buf[len - 1] == '\n') {
@@ -104,10 +189,8 @@ bool startupDb() {
     current_db->tables = tables;
     current_db->num_tables = table_count;
     
-    printDatabase(current_db);
-    
     fclose(fp);
-    return true;
+    return loadColumnData();
 }
 
 bool writeDb() {
@@ -134,5 +217,5 @@ bool writeDb() {
         }
     }
     fclose(fp);
-    return true;
+    return writeColumnData();
 }
