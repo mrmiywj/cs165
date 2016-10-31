@@ -57,6 +57,10 @@ int connect_client() {
     return client_socket;
 }
 
+void handleLoadQuery(char* query) {
+    return;
+}
+
 int main(void)
 {
     int client_socket = connect_client();
@@ -88,12 +92,15 @@ int main(void)
             break;
         }
 
-        message recv_message;
+        log_info("-- received client query %s\n", read_buffer);
 
-        // Only process input that is greater than 1 character.
-        // Ignore things such as new lines.
-        // Otherwise, convert to message and send the message and the
-        // payload directly to the server.
+        // handle load messages differently from the rest
+        if (strncmp(read_buffer, "load", 4) == 0) {
+            handleLoadQuery(read_buffer);
+            continue;
+        }
+
+        message recv_message;
         send_message.length = strlen(read_buffer);
         if (send_message.length > 1) {
             // Send the message_header, which tells server payload size
@@ -109,28 +116,25 @@ int main(void)
             }
 
             // Always wait for server response (even if it is just an OK message)
-            if ((len = recv(client_socket, &(recv_message), sizeof(message), 0)) > 0) {
-                printf("-- client recv_message: status %i, length %i\n", recv_message.status, (int) recv_message.length);
-                if (recv_message.status == OK_WAIT_FOR_RESPONSE && (int) recv_message.length > 0) {
-                    // Calculate number of bytes in response package
-                    int num_bytes = (int) recv_message.length;
-                    char payload[num_bytes + 1];
-
-                    // Receive the payload and print it out
-                    if ((len = recv(client_socket, payload, num_bytes, 0)) > 0) {
-                        payload[num_bytes] = '\0';
-                        printf("%s", payload);
-                    }
-                }
-            }
-            else {
-                if (len < 0) {
+            if ((len = recv(client_socket, &(recv_message), sizeof(message), 0)) <= 0) {
+                if (len < 0)
                     log_err("Failed to receive message.");
-                }
-                else {
-		            log_info("Server closed connection\n");
-		        }
+                else
+                    log_info("Server closed connection\n");
                 exit(1);
+            }
+
+            log_info("-- client recv_message: status %i, length %i\n", recv_message.status, (int) recv_message.length);
+            if (recv_message.status == OK_WAIT_FOR_RESPONSE && (int) recv_message.length > 0) {
+                // Calculate number of bytes in response package
+                int num_bytes = (int) recv_message.length;
+                char payload[num_bytes + 1];
+
+                // Receive the payload and print it out
+                if ((len = recv(client_socket, payload, num_bytes, 0)) > 0) {
+                    payload[num_bytes] = '\0';
+                    printf("%s", payload);
+                }
             }
         }
     }

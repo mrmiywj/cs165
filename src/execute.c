@@ -42,9 +42,6 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
     case INSERT:
         res = handleInsertQuery(query, send_message);
         break;
-    case LOADER:
-        res = handleLoaderQuery(query, send_message);
-        break;
     case SELECT:
         res = handleSelectQuery(query, send_message);
         break;
@@ -261,14 +258,6 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
 
     send_message->status = OK_DONE;
     return "Successfully inserted new row.";
-}
-
-char* handleLoaderQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != LOADER) {
-        send_message->status = QUERY_UNSUPPORTED;
-        return "Invalid query."; 
-    }
-    return "Not implemented yet.";
 }
 
 char* handleSelectQuery(DbOperator* query, message* send_message) {
