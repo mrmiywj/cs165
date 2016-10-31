@@ -85,7 +85,7 @@ bool writeColumnData() {
                     return false;
             }
 
-            fclose(fp);
+            // fclose(fp);
         }
     }
     return true;
@@ -198,7 +198,7 @@ bool writeDb() {
     if (current_db == NULL)
         return true;
     // open file
-    FILE* fp = fopen("./catalog", "w");
+    FILE* fp = fopen("./catalog", "w+");
     if (fp == NULL)
         return false;
     
@@ -217,7 +217,6 @@ bool writeDb() {
                 return false;
         }
     }
-    
-    fclose(fp);
+    // fclose(fp);
     return writeColumnData();
 }

@@ -313,7 +313,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     int num_inserted = 0;
     int* data = NULL;
     for (size_t i = 0; i < table->num_rows; i++) {
-        if (column->data[i] < minimum || column->data[i] > maximum)
+        if (column->data[i] < minimum || column->data[i] >= maximum)
             continue;
         if (num_inserted == capacity) {
             capacity = (capacity == 0) ? 1 : 2 * capacity;

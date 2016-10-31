@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 #include "api/cs165.h"
 #include "api/context.h"
@@ -69,7 +70,8 @@ void handle_client(int client_socket) {
         // check for shutdown
         if (strncmp(recv_message.payload, "shutdown", 8) == 0) {
             log_info("-- Shutting down!\n");
-            break;
+	    writeDb();            
+	    exit(0);
         }
 
         // parse command for content
@@ -162,6 +164,8 @@ int setup_server() {
 }
 
 int main(void) {
+    signal(SIGPIPE, SIG_IGN);    
+
     // set up socket
     int server_socket = setup_server();
     if (server_socket < 0)

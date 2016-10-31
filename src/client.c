@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -198,6 +198,8 @@ void handlePipeQuery(char* query, int socket) {
 
 int main(void)
 {
+    signal(SIGPIPE, SIG_IGN);
+
     int client_socket = connect_client();
     if (client_socket < 0) {
         exit(1);
