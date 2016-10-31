@@ -36,9 +36,9 @@ void log_info(const char *format, ...) {
 #ifdef LOG_INFO
     va_list v;
     va_start(v, format);
-    fprintf(stdout, ANSI_COLOR_GREEN);
+    // fprintf(stdout, ANSI_COLOR_GREEN);
     vfprintf(stdout, format, v);
-    fprintf(stdout, ANSI_COLOR_RESET);
+    // fprintf(stdout, ANSI_COLOR_RESET);
     fflush(stdout);
     va_end(v);
 #else
