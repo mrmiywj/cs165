@@ -82,7 +82,15 @@ void handle_client(int client_socket) {
         char* result = executeDbOperator(query, &send_message);
         send_message.length = strlen(result);
         // print server response to send during every query
-        log_info("-- Server response: \"%s\", length %i, status %i\n", result, send_message.length, send_message.status);
+        char* copy = malloc((strlen(result) + 1) * sizeof(char));
+        strcpy(copy, result);
+        char* ptr = copy;
+        while (*ptr != '\0') {
+            if (*ptr == '\n')
+                *ptr = ' ';
+            ptr++;
+        }
+        log_info("-- Server response: \"%s\", length %i, status %i\n", copy, send_message.length, send_message.status);
 
         // send status and meta of response message
         if (send(client_socket, &(send_message), sizeof(message), 0) == -1) {

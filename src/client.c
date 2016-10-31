@@ -125,7 +125,7 @@ void handleLoadQuery(char* query, int socket) {
     if (col_name == NULL || db_name == NULL || tbl_name == NULL) {
         log_err("load file improper format");
     }
-    log_info("-- loading: %s/%s/%s\n", db_name, tbl_name, col_name);
+    log_info("-- loading: %s/%s/%s", db_name, tbl_name, col_name);
 
     // ask server to create these objects
     // char* query_db = malloc(sizeof(char) * (14 + strlen(db_name)));
