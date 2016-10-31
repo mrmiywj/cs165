@@ -9,7 +9,7 @@ all: client server
 CC = gcc -std=c99 -g -ggdb3 -D _BSD_SOURCE
 
 # Default optimization level
-O ?= 0
+O ?= 3
 
 # Flags and other libraries
 override CFLAGS += -Wall -Wextra -pedantic -pthread -O$(O) -I$(INCLUDES) -I$(INCLUDES)\**
@@ -64,10 +64,9 @@ server: server.o $(INCL_UNIVERSAL) $(INCL_SERVER)
 clean:
 	rm -f client server *.o *~ *.bak core *.core cs165_unix_socket
 	rm -rf .deps
-	rm -rf data
-	rm -rf catalog
 
 distclean: clean
-	rm -rf $(DEPSDIR)
+	rm -rf data
+	rm -rf catalog
 
 .PHONY: all clean distclean
