@@ -47,6 +47,7 @@ void handle_client(int client_socket) {
         length = recv(client_socket, &recv_message, sizeof(message), 0);
         if (length < 0) {
             log_err("Client connection closed!\n");
+            writeDb();
             exit(1);
         } else if (length == 0) {
             done = 1;
