@@ -432,33 +432,21 @@ char* handleFetchQuery(Dboperator* query, message* send_message) {
     strcpy(new_handle.name, target);
 
     // scan through column and store all data in tuples
-    // int capacity = 0;
-    // int num_inserted = 0;
-    // int* data = NULL;
-    // for (size_t i = 0; i < table->num_rows; i++) {
-    //     if (num_inserted == capacity) {
-    //         capacity = (capacity == 0) ? 1 : 2 * capacity;
-    //         int* new_data = realloc(data, sizeof(int) * capacity);
-    //         if (new_data == NULL) {
-    //             free(new_data);
-    //             free(new_pointer.result);
-    //             send_message->status = EXECUTION_ERROR;
-    //             return "-- Error calculating result array.";
-    //         }
-    //         data = new_data;
-    //     }
-    //     data[num_inserted] = i;
-    //     num_inserted++;
-    // }
-    // new_pointer.result->payload = data;
-    // new_pointer.result->num_tuples = num_inserted;
+    int num_tuples = src_handle->generalized_column.column_pointer.result.num_tuples;
+    int* indices = (int*) src_handle->generalized_column.column_pointer.result.payload;
+    int* data = malloc(sizeof(int) * num_tuples);
+    for (size_t i = 0; i < num_tuples; i++) {
+        data[i] = column->data[indices[i]];
+    }
+    new_pointer.result->payload = data;
+    new_pointer.result->num_tuples = num_tuples;
 
-    // // search for context and add to the list of variables
-    // if (checkContextSize(context) != true) {
-    //     send_message->status = EXECUTION_ERROR;
-    //     return "-- Problem inserting new handle into client context.";
-    // }
-    // context->chandle_table[context->chandles_in_use++] = new_handle;
+    // search for context and add to the list of variables
+    if (checkContextSize(context) != true) {
+        send_message->status = EXECUTION_ERROR;
+        return "-- Problem inserting new handle into client context.";
+    }
+    context->chandle_table[context->chandles_in_use++] = new_handle;
 
     send_message->status = OK_DONE;
     return "Successfully fetched data from select query.";
