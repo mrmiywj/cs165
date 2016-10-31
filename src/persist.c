@@ -16,29 +16,17 @@ bool loadColumnData() {
         for (size_t j = 0; j < curr_table->col_count; j++) {
             Column* curr_col = curr_table->columns[j];
             sprintf(path, "%s%s/%s/%s", DATA_PATH, current_db->name, curr_table->name, curr_col->name);
-            // REMOVE
-            printf("Reading in column from path %s now...\n", path);
-            printf("Column pointer: %p\n", curr_col);
-
-            printf("23\n");
-            printDatabase(current_db);
+            log_info("-- Reading in column from path %s now...\n", path);
         
             // column data trackers
             size_t data_count = 0;
             size_t data_capacity = 0;
             int* values = NULL;
 
-            printf("30\n");
-            printDatabase(current_db);
-
             FILE* fp = fopen(path, "r");
             if (fp == NULL)
                 return false;
-            
-            printf("36\n");
-            printDatabase(current_db);
 
-            size_t count = 0;
             // iterate over all data in file
             while (fgets(buf, sizeof(buf), fp)) {
                 // remove \n if necessary
@@ -64,23 +52,13 @@ bool loadColumnData() {
 
                 // insert new int value
                 values[data_count++] = atoi(buf);
-                count++;
             }
-            
-            printf("67\n");
-            printDatabase(current_db);
 
             // store new data in column
             curr_col->data = values;
-            curr_table->num_rows = count;
-            
-            printf("77\n");
-            printDatabase(current_db);
+            curr_table->num_rows = data_count;
         }
-        printDatabase(current_db);
     }
-
-    printDatabase(current_db);
 
     return true;
 }
@@ -93,8 +71,6 @@ bool writeColumnData() {
         for (size_t j = 0; j < curr_table->col_count; j++) {
             Column* curr_col = curr_table->columns[j];
             sprintf(path, "%s%s/%s/%s", DATA_PATH, current_db->name, curr_table->name, curr_col->name);
-            // REMOVE
-            printf("Writing column to path %s now...\n", path);
 
             FILE* fp = fopen(path, "ab+");
             if (fp == NULL)
@@ -150,9 +126,8 @@ bool startupDb() {
             if (columns != NULL) {
                 tables[table_count - 1]->columns = columns;
                 tables[table_count - 1]->col_count = col_count;
-            } else {
-                columns = NULL;
             }
+            columns = NULL;
             col_count = 0;
             col_capacity = 0;
             // check for table capacity
@@ -210,6 +185,9 @@ bool startupDb() {
     current_db->num_tables = table_count;
     
     fclose(fp);
+
+    log_info("-- loaded db metadata");
+    printDatabase(current_db);
     return loadColumnData();
 }
 

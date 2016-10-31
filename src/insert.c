@@ -30,7 +30,6 @@ DbOperator* parse_insert(char* arguments, message* response) {
     size_t columns_inserted = 1;
     char* cpy = arguments;
     while (*cpy != '\0') {
-        printf("%c", *cpy);
         if (*cpy == ',')
             columns_inserted++;
         cpy++;

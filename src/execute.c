@@ -147,8 +147,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         new_table->col_count = 0;
         new_table->num_rows = 0;
         new_table->capacity = 0;
-        current_db->tables[current_db->num_tables] = new_table;
-        current_db->num_tables++;
+        current_db->tables[current_db->num_tables++] = new_table;
 
         // finished successfully
         send_message->status = OK_DONE;
@@ -527,7 +526,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
         }
     }
     values[length] = '\0';
-    printf("result printf: %s\n", values);
+    printf("-- result printf: %s\n", values);
 
     send_message->status = OK_WAIT_FOR_RESPONSE;
     send_message->length = length;

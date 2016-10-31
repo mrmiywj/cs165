@@ -74,8 +74,8 @@ void handle_client(int client_socket) {
         // handle query and execute
         char* result = executeDbOperator(query, &send_message);
         send_message.length = strlen(result);
-        // REMOVE: print server response to send during every query
-        printf("Server response: \"%s\", length %i, status %i\n", result, send_message.length, send_message.status);
+        // print server response to send during every query
+        log_info("-- Server response: \"%s\", length %i, status %i\n", result, send_message.length, send_message.status);
 
         // send status and meta of response message
         if (send(client_socket, &(send_message), sizeof(message), 0) == -1) {
@@ -93,7 +93,7 @@ void handle_client(int client_socket) {
             }
         }
         
-        // REMOVE: print context every call
+        // print context every call
         printContext(new_context);
     } while (!done);
 

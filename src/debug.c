@@ -110,7 +110,7 @@ void printDatabase(Db* db) {
 
     // print each of the tables
     for (size_t i = 0; i < db->num_tables; i++) {
-        log_info("    Table %i:\n", i);
+        log_info("    Table %i at %p:\n", i, db->tables[i]);
         printTable(db->tables[i], "\t");
     }
     log_info("\n");
@@ -128,7 +128,7 @@ void printTable(Table* tbl, char* prefix) {
     char next_prefix[16];
     sprintf(next_prefix, "%s%s", prefix, "    ");
     for (size_t i = 0; i < tbl->col_count; i++) {
-        log_info("%sColumn %i:\n", prefix, i);
+        log_info("%sColumn %i at %p:\n", prefix, i, tbl->columns[i]);
         printColumn(tbl->columns[i], next_prefix, tbl->num_rows);
     }
 }
@@ -139,7 +139,7 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
     if (nvals == 0) {
         log_info("%sNo values\n", prefix);
     }
-    log_info("%sValues: [ ", prefix);
+    log_info("%sValues at %p: [ ", prefix, col->data);
     for (size_t i = 0; i < nvals; i++) {
         log_info("%i ", col->data[i]);
     }
