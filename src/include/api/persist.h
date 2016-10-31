@@ -4,7 +4,7 @@
 #include "api/cs165.h"
 #include "db_io.h"
 
-Db* startupDb();
+bool startupDb();
 bool writeDb();
 
 #endif

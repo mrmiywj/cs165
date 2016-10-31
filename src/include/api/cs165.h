@@ -30,7 +30,6 @@ typedef struct Db {
     char name[MAX_SIZE_NAME + 1];
     Table** tables;
     size_t num_tables;
-    size_t tables_size;
     size_t tables_capacity;
 } Db;
 

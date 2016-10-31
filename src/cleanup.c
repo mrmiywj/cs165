@@ -20,7 +20,7 @@ void freeTable(Table* tbl) {
 void freeDb(Db* db) {
     if (db == NULL)
         return;
-    for (size_t i = 0, size = db->tables_size; i < size; i++)
+    for (size_t i = 0, size = db->num_tables; i < size; i++)
         freeTable(db->tables[i]);
     free(db);
 }

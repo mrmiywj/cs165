@@ -104,7 +104,6 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         strcpy(current_db->name, db_name);
         current_db->tables = NULL;
         current_db->num_tables = 0;
-        current_db->tables_size = 0;
         current_db->tables_capacity = 0;
 
         // finished successfully

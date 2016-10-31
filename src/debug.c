@@ -106,7 +106,6 @@ void printDatabase(Db* db) {
     // Db.(name, num_tables, tables_size, tables_capacity)
     log_info("    Name: %s\n", db->name);
     log_info("    Num tables: %i\n", db->num_tables);
-    log_info("    Table size: %i\n", db->tables_size);
     log_info("    Table maxsize: %i\n", db->tables_capacity);
 
     // print each of the tables
