@@ -48,8 +48,7 @@ void handle_client(int client_socket) {
         length = recv(client_socket, &recv_message, sizeof(message), 0);
         if (length < 0) {
             log_err("Client connection closed!\n");
-            writeDb();
-            exit(1);
+            break;
         } else if (length == 0) {
             done = 1;
         }
@@ -70,8 +69,8 @@ void handle_client(int client_socket) {
         // check for shutdown
         if (strncmp(recv_message.payload, "shutdown", 8) == 0) {
             log_info("-- Shutting down!\n");
-	    writeDb();            
-	    exit(0);
+	        writeDb();            
+	        exit(0);
         }
 
         // parse command for content

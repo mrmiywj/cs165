@@ -195,6 +195,8 @@ bool startupDb() {
 }
 
 bool writeDb() {
+    log_info("-- Writing database to file.\n");
+
     if (current_db == NULL)
         return true;
     // open file
