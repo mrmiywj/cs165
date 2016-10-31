@@ -18,16 +18,26 @@ bool loadColumnData() {
             sprintf(path, "%s%s/%s/%s", DATA_PATH, current_db->name, curr_table->name, curr_col->name);
             // REMOVE
             printf("Reading in column from path %s now...\n", path);
+            printf("Column pointer: %p\n", curr_col);
 
+            printf("23\n");
+            printDatabase(current_db);
+        
             // column data trackers
             size_t data_count = 0;
             size_t data_capacity = 0;
-            int* data = NULL; 
+            int* values = NULL;
+
+            printf("30\n");
+            printDatabase(current_db);
 
             FILE* fp = fopen(path, "r");
             if (fp == NULL)
                 return false;
             
+            printf("36\n");
+            printDatabase(current_db);
+
             size_t count = 0;
             // iterate over all data in file
             while (fgets(buf, sizeof(buf), fp)) {
@@ -41,26 +51,33 @@ bool loadColumnData() {
                 // check capacity
                 if (data_count >= data_capacity) {
                     size_t new_size = (data_capacity == 0) ? 1 : 2 * data_capacity;
-                    if (data == NULL) {
-                        data = malloc(sizeof(int) * new_size);
+                    if (values == NULL) {
+                        values = malloc(sizeof(int) * new_size);
                     } else {
-                        int* new_data = realloc(data, sizeof(int) * new_size);
+                        int* new_data = realloc(values, sizeof(int) * new_size);
                         if (new_data == NULL)
                             return false;
-                        data = new_data;
+                        values = new_data;
                     }
                     data_capacity = new_size;
                 }
 
                 // insert new int value
-                data[data_count++] = atoi(buf);
+                values[data_count++] = atoi(buf);
                 count++;
             }
             
+            printf("67\n");
+            printDatabase(current_db);
+
             // store new data in column
-            curr_col->data = data;
+            curr_col->data = values;
             curr_table->num_rows = count;
+            
+            printf("77\n");
+            printDatabase(current_db);
         }
+        printDatabase(current_db);
     }
 
     printDatabase(current_db);
@@ -142,7 +159,7 @@ bool startupDb() {
             if (table_count >= table_capacity) {
                 size_t new_size = (table_capacity == 0) ? 1 : 2 * table_capacity;
                 if (tables == NULL) {
-                    tables = malloc(sizeof(Table*) * new_size);
+                    tables = calloc(new_size, sizeof(Table*));
                 } else {
                     Table** new_tables = realloc(tables, sizeof(Table*) * new_size);
                     if (new_tables == NULL)
@@ -167,7 +184,7 @@ bool startupDb() {
             if (col_count >= col_capacity) {
                 size_t new_size = (col_capacity == 0) ? 1 : 2 * col_capacity;
                 if (columns == NULL) {
-                    columns = malloc(sizeof(Column*) * new_size);
+                    columns = calloc(new_size, sizeof(Column*));
                 } else {
                     Column** new_cols = realloc(columns, sizeof(Column*) * new_size);
                     if (new_cols == NULL)

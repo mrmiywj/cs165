@@ -131,7 +131,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
 
         // update the db index
         if (current_db->tables == NULL) {
-            current_db->tables = malloc(sizeof(Table*));
+            current_db->tables = calloc(1, sizeof(Table*));
         } else {
             size_t new_num = current_db->num_tables + 1;
             Table** new_tables = realloc(current_db->tables, new_num * sizeof(Table*));
@@ -184,7 +184,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         
         // found the correct table, insert new column
         if (table->columns == NULL) {
-            table->columns = malloc(sizeof(Column*));
+            table->columns = calloc(1, sizeof(Column*));
         } else {
             size_t new_num = table->col_count + 1;
             Column** new_cols = realloc(table->columns, new_num * sizeof(Column*)); 
@@ -240,7 +240,7 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
     for (size_t i = 0; i < table->col_count; i++) {
         Column* col = table->columns[i];
         if (col->data == NULL) {
-            col->data = malloc(sizeof(int) * COL_INITIAL_SIZE);
+            col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
             table->capacity = COL_INITIAL_SIZE;
         }
         if (num_rows == table->capacity) {
@@ -318,14 +318,18 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             continue;
         if (num_inserted == capacity) {
             capacity = (capacity == 0) ? 1 : 2 * capacity;
-            int* new_data = realloc(data, sizeof(int) * capacity);
-            if (new_data == NULL) {
-                free(new_data);
-                free(new_pointer.result);
-                send_message->status = EXECUTION_ERROR;
-                return "-- Error calculating result array.";
+            if (data == NULL) {
+                data = calloc(capacity, sizeof(int));
+            } else {
+                int* new_data = realloc(data, sizeof(int) * capacity);
+                if (new_data == NULL) {
+                    free(new_data);
+                    free(new_pointer.result);
+                    send_message->status = EXECUTION_ERROR;
+                    return "-- Error calculating result array.";
+                }
+                data = new_data;   
             }
-            data = new_data;
         }
         data[num_inserted] = i;
         num_inserted++;
@@ -341,13 +345,18 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     }
     if (context->chandles_in_use == context->chandle_slots) {
         int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
-        GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
-        if (new_table == NULL) {
-            send_message->status = EXECUTION_ERROR;
-            return "-- Problem inserting new handle into client context.";
+        if (context->chandle_table == NULL) {
+            context->chandle_table = calloc(new_size, sizeof(GeneralizedColumnHandle));
+            context->chandle_slots = new_size;
+        } else {
+            GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
+            if (new_table == NULL) {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Problem inserting new handle into client context.";
+            }
+            context->chandle_table = new_table;
+            context->chandle_slots = new_size;
         }
-        context->chandle_table = new_table;
-        context->chandle_slots = new_size;
     }
     context->chandle_table[context->chandles_in_use++] = new_handle;
 
