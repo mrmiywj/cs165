@@ -28,6 +28,7 @@ bool loadColumnData() {
             if (fp == NULL)
                 return false;
             
+            size_t count = 0;
             // iterate over all data in file
             while (fgets(buf, sizeof(buf), fp)) {
                 // remove \n if necessary
@@ -53,10 +54,12 @@ bool loadColumnData() {
 
                 // insert new int value
                 data[data_count++] = atoi(buf);
+                count++;
             }
             
             // store new data in column
             curr_col->data = data;
+            curr_table->num_rows = count;
         }
     }
 
@@ -197,7 +200,7 @@ bool writeDb() {
     if (current_db == NULL)
         return true;
     // open file
-    FILE* fp = fopen("./catalog", "ab+");
+    FILE* fp = fopen("./catalog", "w");
     if (fp == NULL)
         return false;
     
