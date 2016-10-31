@@ -1,5 +1,5 @@
-#include "util/log.h"
 #include "util/debug.h"
+#include "util/log.h"
 
 /* Prints a description of a DbOperator object. */
 void printDbOperator(DbOperator* query) {
@@ -86,17 +86,12 @@ void printDbOperator(DbOperator* query) {
             log_info("\t    DB: %s\n", fields.fetch.db_name);
             log_info("\t    TBL: %s\n", fields.fetch.tbl_name);
             log_info("\t    COL: %s\n", fields.fetch.col_name);
-            log_info("\t    HANDLE: %s\n", fields.fetch.handle);
+            log_info("\t    SOURCE: %s\n", fields.fetch.source);
+            log_info("\t    TARGET: %s\n", fields.fetch.target);
             break;
         default:
             break;
     }
-
-    /* DbOperator.context */
-    // log_info("Context: ");
-    // log_info("         %i handles in use\n", query->context->chandles_in_use);
-    // log_info("         %i handle slots\n", query->context->chandle_slots);
-
     log_info("\n");
 }
 
@@ -150,4 +145,67 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
         log_info("%i ", col->data[i]);
     }
     log_info("]\n");
+}
+
+/* Prints a description of a ClientContext object. */
+void printContext(ClientContext* context) {
+    log_info("Client context at %p\n", context);
+    log_info("    # handles: %i\n", context->chandles_in_use);
+    log_info("    capacity: %i\n", context->chandle_slots);
+    log_info("    client fd: %i\n", context->client_fd);
+    for (int i = 0; i < context->chandles_in_use; i++) {
+        GeneralizedColumnHandle handle = context->chandle_table[i];
+        log_info("   == handle %i (%s):\n", i, handle.name);
+        GeneralizedColumn gcol = handle.generalized_column;
+        switch (gcol.column_type) {
+            case RESULT: {
+                Result* result = gcol.column_pointer.result;
+                log_info("         Type: RESULT\n");
+                log_info("         # tuples: %i\n", result->num_tuples);
+                switch (result->data_type) {
+                    case INT: {
+                        log_info("         Data type: INT\n");
+                        log_info("         Values: [ ");
+                        int* data = (int*) result->payload;
+                        for (size_t j = 0; j < result->num_tuples; j++) {
+                            log_info("%i ", data[j]);
+                        }
+                        log_info(" ]\n");
+                        break; 
+                    }           
+                    case LONG: {
+                        log_info("         Data type: INT\n");
+                        log_info("         Values: [ ");
+                        long* data = (long*) result->payload;
+                        for (size_t j = 0; j < result->num_tuples; j++) {
+                            log_info("%l ", data[j]);
+                        }
+                        log_info(" ]\n");
+                        break;
+                    }
+                    case FLOAT: {
+                        log_info("         Data type: INT\n");
+                        log_info("         Values: [ ");
+                        float* data = (float*) result->payload;
+                        for (size_t j = 0; j < result->num_tuples; j++) {
+                            log_info("%f ", data[j]);
+                        }
+                        log_info(" ]\n");
+                        break;
+                    }
+                    default: 
+                        break;
+                }
+                break;
+            }
+            case COLUMN: {
+                Column* column = gcol.column_pointer.column;
+                log_info("        Type: COLUMN\n");
+                log_info("        Col name: %s\n", column->name);
+                break;
+            }
+            default:
+                break;
+        }
+    }
 }

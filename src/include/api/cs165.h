@@ -34,7 +34,7 @@ typedef struct Db {
     size_t tables_capacity;
 } Db;
 
-// ================ NOT USEFUL YET ================
+// ================ CONTEXT/RESULTS ================
 typedef struct Result {
     size_t num_tuples;
     DataType data_type;

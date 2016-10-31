@@ -369,19 +369,19 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     return "Successfully inserted new row.";
 }
 
-char* handleFetchQuery(Dboperator* query, message* send_message) {
+char* handleFetchQuery(DbOperator* query, message* send_message) {
     if (query == NULL || query->type != SELECT) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }
 
     // retrieve params
-    FetchOperator select = query->fields.select;
-    char* db_name = select.db_name;
-    char* tbl_name = select.tbl_name;
-    char* col_name = select.col_name;
-    char* source = select.source;
-    char* target = select.target;
+    FetchOperator fetch = query->fields.fetch;
+    char* db_name = fetch.db_name;
+    char* tbl_name = fetch.tbl_name;
+    char* col_name = fetch.col_name;
+    char* source = fetch.source;
+    char* target = fetch.target;
     
     // check database
     if (strcmp(db_name, current_db->name) != 0) {
@@ -432,10 +432,10 @@ char* handleFetchQuery(Dboperator* query, message* send_message) {
     strcpy(new_handle.name, target);
 
     // scan through column and store all data in tuples
-    int num_tuples = src_handle->generalized_column.column_pointer.result.num_tuples;
-    int* indices = (int*) src_handle->generalized_column.column_pointer.result.payload;
+    int num_tuples = src_handle->generalized_column.column_pointer.result->num_tuples;
+    int* indices = (int*) src_handle->generalized_column.column_pointer.result->payload;
     int* data = malloc(sizeof(int) * num_tuples);
-    for (size_t i = 0; i < num_tuples; i++) {
+    for (int i = 0; i < num_tuples; i++) {
         data[i] = column->data[indices[i]];
     }
     new_pointer.result->payload = data;

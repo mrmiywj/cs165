@@ -18,7 +18,7 @@ ClientContext* searchContext(int fd) {
 
 GeneralizedColumnHandle* findHandle(ClientContext* context, char* handle) {
     for (int i = 0; i < context->chandles_in_use; i++)
-        if (strcmp(context->chandle_table[i]->name, handle) == 0)
+        if (strcmp(context->chandle_table[i].name, handle) == 0)
             return &(context->chandle_table[i]);
     return NULL;
 }
