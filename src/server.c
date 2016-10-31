@@ -69,8 +69,7 @@ void handle_client(int client_socket) {
         // check for shutdown
         if (strncmp(recv_message.payload, "shutdown", 8) == 0) {
             log_info("-- Shutting down!\n");
-	        writeDb();            
-	        exit(0);
+            break;
         }
 
         // parse command for content
