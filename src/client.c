@@ -131,6 +131,38 @@ void handleLoadQuery(char* query, int socket) {
     }
 }
 
+void handlePipeQuery(char* query, int socket) {
+    // extract message path
+    char* path = query + 5;
+    path = trim_whitespace(path);
+    path = trim_quotes(path);
+    size_t len = strlen(path);
+    if (path[len - 1] != ')')
+        return;
+    path[len - 1] = '\0';
+
+    // open file
+    FILE* fp = fopen(path, "r");
+    if (fp == NULL)
+        return;
+    char buf[1024];
+    char* command = malloc(sizeof(char) * 1025);
+    message send_message;
+    send_message.status = 0;
+
+    // read database/table/column
+    while (fgets(buf, sizeof(buf), fp)) {
+        size_t len = strlen(buf);
+        if (buf[len - 1] == '\n')
+            buf[len - 1] = '\0';
+            len--;
+        sprintf(command, "%s", buf);
+        send_message.length = len;
+        send_message.payload = command;
+        sendMessage(send_message, socket); 
+    }
+}
+
 int main(void)
 {
     int client_socket = connect_client();
@@ -166,6 +198,12 @@ int main(void)
         // handle load messages differently from the rest
         if (strncmp(read_buffer, "load", 4) == 0) {
             handleLoadQuery(read_buffer, client_socket);
+            continue;
+        }
+
+        // handle pipe messages differently from the rest
+        if (strncmp(read_buffer, "pipe", 4) == 0) {
+            handlePipeQuery(read_buffer, client_socket);
             continue;
         }
 
