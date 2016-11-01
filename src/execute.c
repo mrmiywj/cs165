@@ -238,17 +238,21 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
     size_t num_rows = table->num_rows;
     for (size_t i = 0; i < table->col_count; i++) {
         Column* col = table->columns[i];
-        if (col->data == NULL) {
-            col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
-            table->capacity = COL_INITIAL_SIZE;
-        }
         if (num_rows == table->capacity) {
-            int* new_data = realloc(col->data, table->capacity * COL_RESIZE_FACTOR * sizeof(int));
-            if (new_data == NULL) {
-                send_message->status = EXECUTION_ERROR;
-                return "-- Unable to insert a new row.";
+            log_info("-- Resizing table columns...\n");
+            if (col->data == NULL) {
+                col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
+                table->capacity = COL_INITIAL_SIZE;
+            } else {
+                int* new_data = calloc(table->capacity * COL_RESIZE_FACTOR, sizeof(int));
+                if (new_data == NULL) {
+                    send_message->status = EXECUTION_ERROR;
+                    return "-- Unable to insert a new row.";
+                }
+                memcpy(new_data, col->data, num_rows * sizeof(int));
+                free(col->data);
+                col->data = new_data;
             }
-            col->data = new_data;
             table->capacity *= COL_RESIZE_FACTOR;
         }
         col->data[num_rows] = values[i];
