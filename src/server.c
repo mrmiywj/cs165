@@ -47,7 +47,7 @@ void handle_client(int client_socket) {
         // receive query metadata
         length = recv(client_socket, &recv_message, sizeof(message), 0);
         if (length < 0) {
-            log_err("Client connection closed!\n");
+            log_err("-- Client connection closed!\n");
             break;
         } else if (length == 0) {
             done = 1;
@@ -72,7 +72,7 @@ void handle_client(int client_socket) {
             break;
         }
 
-        log_info("-- Received query from client: \"%s\"", recv_message.payload);
+        log_info("-- Received query from client: \"%s\"\n", recv_message.payload);
 
         // parse command for content
         send_message.status = OK_DONE;
