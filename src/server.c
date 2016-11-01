@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "api/cs165.h"
 #include "api/context.h"
@@ -96,7 +97,7 @@ void handle_client(int client_socket) {
 
         // send status and meta of response message
         if (send(client_socket, &(send_message), sizeof(message), 0) == -1) {
-            log_err("Failed to send message.");
+            log_err("Failed to send message metadata, error %i.\n", errno);
             writeDb();
             exit(1);
         }
@@ -104,7 +105,7 @@ void handle_client(int client_socket) {
         // send message payload if necessary
         if (send_message.status == OK_WAIT_FOR_RESPONSE && (int) send_message.length > 0) {
             if (send(client_socket, result, send_message.length, 0) == -1) {
-                log_err("Failed to send message.");
+                log_err("Failed to send message payload, error %i.\n", errno);
                 writeDb();
                 exit(1);
             }

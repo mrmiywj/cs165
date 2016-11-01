@@ -158,6 +158,7 @@ void handleLoadQuery(char* query, int socket) {
         send_message.length = 21 + strlen(db_name) + strlen(tbl_name) + len;
         send_message.payload = query_insert;
         sendMessage(send_message, socket); 
+        receiveMessage(socket);
     }
 }
 
