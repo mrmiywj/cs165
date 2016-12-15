@@ -370,7 +370,13 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             context->chandle_slots = new_size;
         }
     }
-    context->chandle_table[context->chandles_in_use++] = new_handle;
+    // check for duplicate handle names
+    int dupIndex = findDuplicateHandle(context, var_name);
+    if dupIndex < 0 {
+        context->chandle_table[context->chandles_in_use++] = new_handle;
+    } else {
+        context->chandle_table[dupIndex] = new_handle;
+    }
 
     send_message->status = OK_DONE;
     return "Successfully inserted new row.";
@@ -453,7 +459,13 @@ char* handleFetchQuery(DbOperator* query, message* send_message) {
         send_message->status = EXECUTION_ERROR;
         return "-- Problem inserting new handle into client context.";
     }
-    context->chandle_table[context->chandles_in_use++] = new_handle;
+    // check for duplicate handle names
+    int dupIndex = findDuplicateHandle(context, var_name);
+    if dupIndex < 0 {
+        context->chandle_table[context->chandles_in_use++] = new_handle;
+    } else {
+        context->chandle_table[dupIndex] = new_handle;
+    }
 
     send_message->status = OK_DONE;
     return "Successfully fetched data from select query.";
@@ -678,7 +690,13 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
             send_message->status = EXECUTION_ERROR;
             return "-- Problem inserting new handle into client context.";
         }
-        context->chandle_table[context->chandles_in_use++] = new_handle;
+        // check for duplicate handle names
+        int dupIndex = findDuplicateHandle(context, var_name);
+        if dupIndex < 0 {
+            context->chandle_table[context->chandles_in_use++] = new_handle;
+        } else {
+            context->chandle_table[dupIndex] = new_handle;
+        }
 
         send_message->status = OK_DONE;
         return "Successfully completed computation in math query.";
@@ -825,7 +843,13 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
             send_message->status = EXECUTION_ERROR;
             return "-- Problem inserting new handle into client context.";
         }
-        context->chandle_table[context->chandles_in_use++] = new_handle;
+        // check for duplicate handle names
+        int dupIndex = findDuplicateHandle(context, var_name);
+        if dupIndex < 0 {
+            context->chandle_table[context->chandles_in_use++] = new_handle;
+        } else {
+            context->chandle_table[dupIndex] = new_handle;
+        }
 
         send_message->status = OK_DONE;
         return "Successfully completed computation in math query.";

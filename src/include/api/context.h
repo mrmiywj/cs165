@@ -7,6 +7,7 @@
 
 ClientContext* searchContext(int fd);
 GeneralizedColumnHandle* findHandle(ClientContext* context, char* handle);
+int findDuplicateHandle(ClientContext* context, char* handle);
 void insertContext(ClientContext* context);
 void deleteContext(ClientContext* context);
 bool checkContextSize(ClientContext* context);

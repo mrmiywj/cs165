@@ -20,11 +20,19 @@ ClientContext* searchContext(int fd) {
 }
 
 GeneralizedColumnHandle* findHandle(ClientContext* context, char* handle) {
-    printf("SEARCHING FOR HANDLE: %s\n", handle);
     for (int i = 0; i < context->chandles_in_use; i++)
         if (strcmp(context->chandle_table[i].name, handle) == 0)
             return &(context->chandle_table[i]);
     return NULL;
+}
+
+int findDuplicateHandle(ClientContext* context, char* handle) {
+    for (int i = 0; i < context->chandles_in_use; i++) {
+        if (strcmp(context->chandle_table[i].name, handle) == 0)
+            destroyColumnHandle(context->chandle_table[i]);
+            return i;
+    }
+    return -1;
 }
 
 void insertContext(ClientContext* context) {
@@ -51,4 +59,20 @@ bool checkContextSize(ClientContext* context) {
         context->chandle_slots = new_size;
     }
     return true;
+}
+
+void destroyColumnHandle(GeneralizedColumnHandle handle) {
+    GeneralizedColumn column = handle.generalized_column;
+    switch (column.column_type) {
+        case RESULT: {
+            Result* result = column.column_pointer.result;
+            free(result->payload);
+        }
+        case COLUMN: {
+            Column* col = column.column_pointer.column;
+            free(col->data);
+        }
+        default:
+            break;
+    }
 }
