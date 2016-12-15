@@ -129,23 +129,6 @@ void handleLoadQuery(char* query, int socket) {
     }
     log_info("-- Loading: %s/%s/%s\n", db_name, tbl_name, col_name);
 
-    // ask server to create these objects
-    // char* query_db = malloc(sizeof(char) * (14 + strlen(db_name)));
-    // sprintf(query_db, "create(db,\"%s\")", db_name);
-    // send_message.length = 13 + strlen(db_name);
-    // send_message.payload = query_db;
-    // sendMessage(send_message, socket);
-    // char* query_tbl = malloc(sizeof(char) * (18 + strlen(db_name) + strlen(tbl_name)));
-    // sprintf(query_tbl, "create(tbl,\"%s\",%s,1)", tbl_name, db_name);
-    // send_message.length = 17 + strlen(db_name) + strlen(tbl_name);
-    // send_message.payload = query_tbl;
-    // sendMessage(send_message, socket);
-    // char* query_col = malloc(sizeof(char) * (17 + strlen(db_name) + strlen(tbl_name) + strlen(col_name)));
-    // sprintf(query_col, "create(col,\"%s\",%s.%s)", col_name, db_name, tbl_name);
-    // send_message.length = 16 + strlen(db_name) + strlen(tbl_name) + strlen(col_name);
-    // send_message.payload = query_col;
-    // sendMessage(send_message, socket);
-
     // read all rows from file and send to server
     size_t query_size = 22 + strlen(db_name) + strlen(tbl_name) + 1024;
     char* query_insert = malloc(sizeof(char) * query_size);
