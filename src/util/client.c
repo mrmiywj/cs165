@@ -43,7 +43,7 @@ int connect_client() {
     log_info("-- Attempting to connect...\n");
 
     if ((client_socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-        log_err("-- L%d: Failed to create socket.\n", __LINE__);
+        log_err("-- %d: Failed to create socket.");
         return -1;
     }
 
@@ -51,7 +51,7 @@ int connect_client() {
     strncpy(remote.sun_path, SOCK_PATH, strlen(SOCK_PATH) + 1);
     len = strlen(remote.sun_path) + sizeof(remote.sun_family) + 1;
     if (connect(client_socket, (struct sockaddr *)&remote, len) == -1) {
-        perror("-- client connect failed: ");
+        perror("-- Client connect failed.\n");
         return -1;
     }
 
@@ -61,11 +61,11 @@ int connect_client() {
 
 void sendMessage(message send_message, int socket) {
     if (send(socket, &send_message, sizeof(message), 0) == -1) {
-        log_err("-- Unable to send message metadata");
+        log_err("-- Unable to send message metadata\n");
         exit(1);
     } 
     if (send(socket, send_message.payload, send_message.length, 0) == -1) {
-        log_err("-- Unable to send message content");
+        log_err("-- Unable to send message content\n");
         exit(1);
     }
 }
@@ -77,9 +77,9 @@ void receiveMessage(int socket) {
     // retrieve response from server
     if ((len = recv(socket, &recv_message, sizeof(message), 0)) <= 0) {
         if (len < 0)
-            log_err("-- Failed to receive message.");
+            log_err("-- Failed to receive message.\n");
         else {
-            log_info("-- Server closed connection\n");
+            log_info("-- Server closed connection!\n");
             exit(0);
         }
     }
@@ -125,9 +125,9 @@ void handleLoadQuery(char* query, int socket) {
     char* db_name = strsep(&col_name, ".");
     char* tbl_name = strsep(&col_name, ".");
     if (col_name == NULL || db_name == NULL || tbl_name == NULL) {
-        log_err("-- Load file has improper format.");
+        log_err("-- Load file has improper format.\n");
     }
-    log_info("-- Loading: %s/%s/%s", db_name, tbl_name, col_name);
+    log_info("-- Loading: %s/%s/%s\n", db_name, tbl_name, col_name);
 
     // ask server to create these objects
     // char* query_db = malloc(sizeof(char) * (14 + strlen(db_name)));
@@ -228,10 +228,10 @@ int main(void)
     while (printf("%s", prefix), output_str = fgets(read_buffer,
            DEFAULT_STDIN_BUFFER_SIZE, stdin), !feof(stdin)) {
         if (output_str == NULL) {
-            log_err("-- Fgets failed.\n");
+            log_err("-- fgets failed.\n");
             break;
         }
-        log_info("-- Received client query %s", read_buffer);
+        log_info("-- Received client query: %s", read_buffer);
 
         // handle load messages differently from the rest
         if (strncmp(read_buffer, "load", 4) == 0) {

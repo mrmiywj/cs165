@@ -9,7 +9,7 @@ all: client server
 CC = gcc -std=c99 -g -ggdb3
 
 # Default optimization level
-O ?= 3
+O ?= 0
 
 # Flags and other libraries
 override CFLAGS += -Wall -Wextra -pedantic -pthread -O$(O) -I$(INCLUDES) -I$(INCLUDES)\**
@@ -70,5 +70,8 @@ clean:
 distclean: clean
 	rm -rf data
 	rm -rf catalog
+
+remake: clean
+	make
 
 .PHONY: all clean distclean
