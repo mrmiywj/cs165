@@ -53,7 +53,7 @@ DbOperator* process_query(char* query, message* send_message) {
         printf("Handle found: %s\n", handle);
     } else {
         handle = NULL;
-        printf("No handle found in query\n");
+        log_info("No handle found in query\n");
     }
 
     if (strncmp(query, "create", 6) == 0) {

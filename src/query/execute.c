@@ -243,18 +243,26 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
         Column* col = table->columns[i];
         if (num_rows == table->capacity) {
             log_info("-- Resizing table columns...\n");
-            if (col->data == NULL) {
-                col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
+            bool was_empty = false;
+            for (size_t j = 0; j < table->col_count; j++) {
+                Column* curr_col = table->columns[j];
+                if (curr_col->data == NULL) {
+                    curr_col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
+                    was_empty = true;
+                } else {
+                    int* new_data = realloc(curr_col->data, table->capacity * COL_RESIZE_FACTOR * sizeof(int));
+                    if (new_data == NULL) {
+                        send_message->status = EXECUTION_ERROR;
+                        return "-- Unable to insert a new row.";
+                    }
+                    curr_col->data = new_data;
+                }
+            }
+            if (was_empty == true) {
                 table->capacity = COL_INITIAL_SIZE;
             } else {
-                int* new_data = realloc(col->data, table->capacity * COL_RESIZE_FACTOR * sizeof(int));
-                if (new_data == NULL) {
-                    send_message->status = EXECUTION_ERROR;
-                    return "-- Unable to insert a new row.";
-                }
-                col->data = new_data;
+                table->capacity *= COL_RESIZE_FACTOR;
             }
-            table->capacity *= COL_RESIZE_FACTOR;
         }
         col->data[num_rows] = values[i];
     }
