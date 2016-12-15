@@ -1,6 +1,7 @@
 #ifndef CS165_H
 #define CS165_H
 
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -8,12 +9,14 @@
 // Limits the size of a name in our database to 64 characters
 #define MAX_SIZE_NAME 64
 #define HANDLE_MAX_SIZE 64
+#define PAGE_SIZE sysconf(_SC_PAGESIZE)
 
 // ================ DATABASE ================
 typedef enum DataType {
      INT,
      LONG,
-     FLOAT
+     FLOAT,
+     DOUBLE
 } DataType;
 typedef struct Column {
     char name[MAX_SIZE_NAME + 1];
@@ -137,6 +140,7 @@ typedef struct PrintOperator {
 } PrintOperator;
 typedef struct MathOperator {
     MathType type;
+    char* handle;
     char** params;
     size_t num_params;
     // marks whether the first argument is a variable or not
