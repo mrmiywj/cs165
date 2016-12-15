@@ -372,7 +372,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     }
     // check for duplicate handle names
     int dupIndex = findDuplicateHandle(context, var_name);
-    if dupIndex < 0 {
+    if (dupIndex < 0) {
         context->chandle_table[context->chandles_in_use++] = new_handle;
     } else {
         context->chandle_table[dupIndex] = new_handle;
@@ -460,8 +460,8 @@ char* handleFetchQuery(DbOperator* query, message* send_message) {
         return "-- Problem inserting new handle into client context.";
     }
     // check for duplicate handle names
-    int dupIndex = findDuplicateHandle(context, var_name);
-    if dupIndex < 0 {
+    int dupIndex = findDuplicateHandle(context, target);
+    if (dupIndex < 0) {
         context->chandle_table[context->chandles_in_use++] = new_handle;
     } else {
         context->chandle_table[dupIndex] = new_handle;
@@ -691,8 +691,8 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
             return "-- Problem inserting new handle into client context.";
         }
         // check for duplicate handle names
-        int dupIndex = findDuplicateHandle(context, var_name);
-        if dupIndex < 0 {
+        int dupIndex = findDuplicateHandle(context, handle);
+        if (dupIndex < 0) {
             context->chandle_table[context->chandles_in_use++] = new_handle;
         } else {
             context->chandle_table[dupIndex] = new_handle;
@@ -844,8 +844,8 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
             return "-- Problem inserting new handle into client context.";
         }
         // check for duplicate handle names
-        int dupIndex = findDuplicateHandle(context, var_name);
-        if dupIndex < 0 {
+        int dupIndex = findDuplicateHandle(context, handle);
+        if (dupIndex < 0) {
             context->chandle_table[context->chandles_in_use++] = new_handle;
         } else {
             context->chandle_table[dupIndex] = new_handle;

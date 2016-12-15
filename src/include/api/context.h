@@ -11,5 +11,6 @@ int findDuplicateHandle(ClientContext* context, char* handle);
 void insertContext(ClientContext* context);
 void deleteContext(ClientContext* context);
 bool checkContextSize(ClientContext* context);
+void destroyColumnHandle(GeneralizedColumnHandle handle);
 
 #endif
