@@ -27,20 +27,18 @@ DbOperator* parse_math(char* arguments, message* response, char* handle, MathTyp
     
     // possible to have two arguments to the operator
     char* first;
-    char* second = copy;
 
     // parse arguments, look for two if necessary
     if (type > MIN) {
-        first = (char*) strsep(&second, ",");
+        first = (char*) strsep(&copy, ",");
         if (first == NULL) {
             response->status = INCORRECT_FORMAT;
             return NULL;
         }
     } else {
-        first = second;
-        second = NULL;
+        first = copy;
     }
-    char** params = malloc(sizeof(char*) * 7);
+    char** params = malloc(sizeof(char*) * 6);
     bool is_var = false;
     int num_tokens = 0;
     if (first == NULL) {
@@ -64,19 +62,18 @@ DbOperator* parse_math(char* arguments, message* response, char* handle, MathTyp
         num_tokens += 3;
     }
     // parse the second argument
-    if (second != NULL) {
-        params[num_tokens] = (char*) strsep(&second, ".");
-        if (second == NULL) {
-            params[num_tokens] = second;
+    if (copy != NULL) {
+        params[num_tokens] = (char*) strsep(&copy, ".");
+        if (copy == NULL) {
             num_tokens += 1;
         } else {
-            params[num_tokens + 1] = (char*) strsep(&second, ".");
-            if (second == NULL) {
+            params[num_tokens + 1] = (char*) strsep(&copy, ".");
+            if (copy == NULL) {
                 response->status = INCORRECT_FORMAT;
                 free(params);
                 return NULL;
             } else {
-                params[num_tokens + 2] = second;
+                params[num_tokens + 2] = copy;
             }
             num_tokens += 3;
         }
