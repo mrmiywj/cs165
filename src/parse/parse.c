@@ -48,11 +48,12 @@ DbOperator* process_query(char* query, message* send_message) {
     char *equals_pointer = strchr(query, '=');
     char *handle = query;
     if (equals_pointer != NULL) {
-        // handle file table
         *equals_pointer = '\0';
         query = ++equals_pointer;
+        printf("Handle found: %s\n", handle);
     } else {
         handle = NULL;
+        printf("No handle found in query\n");
     }
 
     if (strncmp(query, "create", 6) == 0) {
@@ -97,7 +98,7 @@ DbOperator* process_query(char* query, message* send_message) {
         else {
             log_err("-- Invalid MATH operator type encountered.");
             return NULL;
-        };
+        }
         query += 3;
         return parse_math(query, send_message, handle, type);
     }
