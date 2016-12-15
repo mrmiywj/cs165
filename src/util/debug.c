@@ -93,9 +93,9 @@ void printDbOperator(DbOperator* query) {
             log_info("\tType: MATH\n");
             log_info("\t    MathType: %i\n", fields.math.type);
             for (size_t i = 0; i < fields.math.num_params; i++) {
-                log_info("\t   PARAM%i:%s\n", i, fields.math.params[i]);
+                log_info("\t    PARAM%i:%s\n", i, fields.math.params[i]);
             }
-            log_info("\t   First arg is var: %i\n", fields.math.is_var);
+            log_info("\t    First arg is var: %i\n", fields.math.is_var);
         default:
             break;
     }
@@ -180,7 +180,7 @@ void printContext(ClientContext* context) {
                         for (size_t j = 0; j < result->num_tuples; j++) {
                             log_info("%i ", data[j]);
                         }
-                        log_info(" ]\n");
+                        log_info("]\n");
                         break; 
                     }           
                     case LONG: {
@@ -190,7 +190,7 @@ void printContext(ClientContext* context) {
                         for (size_t j = 0; j < result->num_tuples; j++) {
                             log_info("%l ", data[j]);
                         }
-                        log_info(" ]\n");
+                        log_info("]\n");
                         break;
                     }
                     case FLOAT: {
@@ -200,7 +200,17 @@ void printContext(ClientContext* context) {
                         for (size_t j = 0; j < result->num_tuples; j++) {
                             log_info("%f ", data[j]);
                         }
-                        log_info(" ]\n");
+                        log_info("]\n");
+                        break;
+                    }
+                    case DOUBLE: {
+                        log_info("         Data type: DOUBLE\n");
+                        log_info("         VALUES: [ ");
+                        double* data = (double*) result->payload;
+                        for (size_t j = 0; j < result->num_tuples; j++) {
+                            log_info("%f ", data[j]);
+                        }
+                        log_info("]\n");
                         break;
                     }
                     default: 
