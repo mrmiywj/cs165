@@ -2,6 +2,7 @@ Data/Create
 Data/Fetch
 Data/Insert
 Data/Load
+Data/Math
 Data/Print
 Data/Select
 Debug
