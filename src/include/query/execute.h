@@ -28,5 +28,6 @@ char* handleLoaderQuery(DbOperator* query, message* send_message);
 char* handleSelectQuery(DbOperator* query, message* send_message);
 char* handleFetchQuery(DbOperator* query, message* send_message);
 char* handlePrintQuery(DbOperator* query, message* send_message);
+char* handleMathQuery(DbOperator* query, message* send_message);
 
 #endif
