@@ -51,9 +51,22 @@ $(DEPSDIR)/stamp $(BUILDSTAMP):
 # dependency on the right side of whichever one requires the file.
 ##
 
-INCL_UNIVERSAL = log.o strmanip.o
+INCL_UNIVERSAL = log.o \
+	strmanip.o
 INCL_CLIENT = 
-INCL_SERVER = cleanup.o context.o create.o db_io.o debug.o execute.o fetch.o insert.o parse.o persist.o print.o select.o
+INCL_SERVER = cleanup.o \
+	context.o \
+	create.o \
+	db_io.o \
+	debug.o \
+	execute.o \
+	fetch.o \
+	insert.o \
+	math.o \
+	parse.o \
+	persist.o \
+	print.o \
+	select.o
 
 VPATH := api:parse:query:util
 

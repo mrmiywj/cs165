@@ -89,6 +89,13 @@ void printDbOperator(DbOperator* query) {
             log_info("\t    SOURCE: %s\n", fields.fetch.source);
             log_info("\t    TARGET: %s\n", fields.fetch.target);
             break;
+        case MATH:
+            log_info("\tType: MATH\n");
+            log_info("\t    MathType: %i\n", fields.math.type);
+            for (size_t i = 0; i < fields.math.num_params; i++) {
+                log_info("\t   PARAM%i:%s\n", i, fields.math.params[i]);
+            }
+            log_info("\t   First arg is var: %i\n", fields.math.is_var);
         default:
             break;
     }

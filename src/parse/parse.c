@@ -12,6 +12,7 @@
 #include "parse/select.h"
 #include "parse/fetch.h"
 #include "parse/print.h"
+#include "parse/math.h"
 
 /**
  * parse_command takes as input the send_message from the client and then
@@ -73,6 +74,32 @@ DbOperator* process_query(char* query, message* send_message) {
     if (strncmp(query, "print", 5) == 0) {
         query += 5;
         return parse_print(query, send_message);
+    }
+    if (strncmp(query, "avg", 3) == 0 ||
+        strncmp(query, "sum", 3) == 0 ||
+        strncmp(query, "max", 3) == 0 ||
+        strncmp(query, "min", 3) == 0 ||
+        strncmp(query, "add", 3) == 0 ||
+        strncmp(query, "sub", 3) == 0) {
+        MathType type;
+        if (strncmp(query, "avg", 3) == 0)
+            type = AVG;
+        else if (strncmp(query, "sum", 3) == 0)
+            type = SUM;
+        else if (strncmp(query, "max", 3) == 0)
+            type = MAX;
+        else if (strncmp(query, "min", 3) == 0)
+            type = MIN;
+        else if (strncmp(query, "add", 3) == 0)
+            type = ADD;
+        else if (strncmp(query, "sub", 3) == 0)
+            type = SUB;
+        else {
+            log_err("-- Invalid MATH operator type encountered.");
+            return NULL;
+        };
+        query += 3;
+        return parse_math(query, send_message, handle, type);
     }
     return NULL;
 }

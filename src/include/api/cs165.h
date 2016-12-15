@@ -99,9 +99,11 @@ typedef enum OperatorType {
     LOADER,
     SELECT,
     PRINT,
-    FETCH
+    FETCH,
+    MATH
 } OperatorType;
 typedef enum CreateType { CREATE_DATABASE, CREATE_TABLE, CREATE_COLUMN } CreateType;
+typedef enum MathType { AVG, SUM, MAX, MIN, ADD, SUB } MathType;
 typedef struct CreateOperator {
     CreateType type;
     char** params;
@@ -133,6 +135,13 @@ typedef struct FetchOperator {
 typedef struct PrintOperator {
     char* handle;
 } PrintOperator;
+typedef struct MathOperator {
+    MathType type;
+    char** params;
+    size_t num_params;
+    // marks whether the first argument is a variable or not
+    bool is_var;
+} MathOperator;
 typedef union OperatorFields {
     CreateOperator create;
     InsertOperator insert;
@@ -140,6 +149,7 @@ typedef union OperatorFields {
     SelectOperator select;
     PrintOperator print;
     FetchOperator fetch;
+    MathOperator math;
 } OperatorFields;
 
 typedef struct DbOperator {
