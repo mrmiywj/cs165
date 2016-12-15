@@ -51,6 +51,9 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
     case PRINT:
         res = handlePrintQuery(query, send_message);
         break;
+    case MATH:
+        res = handleMathQuery(query, send_message);
+        break;
     default:
         break;
     }
@@ -60,7 +63,7 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
     free(query);
     if (res != NULL)
         return res;
-    return NULL;
+    return "";
 }
 
 // ================ HANDLERS ================
@@ -241,11 +244,9 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
         if (num_rows == table->capacity) {
             log_info("-- Resizing table columns...\n");
             if (col->data == NULL) {
-                printf("WORLD");
                 col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
                 table->capacity = COL_INITIAL_SIZE;
             } else {
-                printf("HELLO");
                 int* new_data = realloc(col->data, table->capacity * COL_RESIZE_FACTOR * sizeof(int));
                 if (new_data == NULL) {
                     send_message->status = EXECUTION_ERROR;
@@ -502,6 +503,14 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
             }
             break;
         }
+        case DOUBLE: {
+            double* data = (double*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(buf, "%f", data[i]);
+                length += strlen(buf) + 1;
+            }
+            break;
+        }
         default:
             break;
     }
@@ -529,6 +538,14 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
             }
             break;
         }
+        case DOUBLE: {
+            double* data = (double*) result->payload;
+            for (size_t i = 0; i < result->num_tuples; i++) {
+                sprintf(values, "%s%f\n", values, data[i]);
+            }
+        }
+        default:
+            break;
     }
     values[length] = '\0';
     printf("-- result printf: %s\n", values);
@@ -536,4 +553,273 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
     send_message->status = OK_WAIT_FOR_RESPONSE;
     send_message->length = length;
     return values;
+}
+
+char* handleMathQuery(DbOperator* query, message* send_message) {
+    if (query == NULL || query->type != MATH) {
+        send_message->status = QUERY_UNSUPPORTED;
+        return "Invalid query."; 
+    }
+
+    // retrieve params
+    MathOperator math = query->fields.math;
+    char* handle = math.handle;
+    
+    // get context for current client
+    ClientContext* context = searchContext(query->client_fd);
+    if (context == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find context for current client.";
+    }
+    
+    // handle one and two argument cases separately
+    if (math.type <= 3) {
+        size_t num_tuples;
+        int* payload;
+        
+        // handle variable vs. database queries separately
+        if (math.is_var == true) {
+            // search for result in context
+            Result* result = findHandle(context, math.params[0])->generalized_column.column_pointer.result;
+            if (result == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified result source.";
+            }
+            num_tuples = result->num_tuples;
+            payload = (int*) result->payload;
+        } else {
+            // check database
+            if (strcmp(math.params[0], current_db->name) != 0) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Database not found.";
+            }
+
+            // if we didn't manage to find a table
+            Table* table = findTable(math.params[1]);
+            if (table == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified table.";
+            }
+
+            // if we didn't manage to find a column
+            Column* column = findColumn(table, math.params[2]);
+            if (column == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified column.";
+            }
+
+            num_tuples = table->num_rows;
+            payload = column->data;
+        }
+
+        double result = 0;
+        switch (math.type) {
+            case AVG: {
+                for (size_t i = 0; i < num_tuples; i++) {
+                    result += payload[i];
+                }
+                result /= num_tuples;
+                break;
+            }
+            case SUM: {
+                for (size_t i = 0; i < num_tuples; i++) {
+                    result += payload[i];
+                }
+                break;
+            }
+            case MIN: {
+                result = payload[0];
+                for (size_t i = 1; i < num_tuples; i++) {
+                    if (payload[i] < result) {
+                        result = payload[i];
+                    }
+                }
+                break;
+            }
+            case MAX: {
+                result = payload[0];
+                for (size_t i = 1; i < num_tuples; i++) {
+                    if (payload[i] > result) {
+                        result = payload[i];
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        double* toSave = malloc(sizeof(double));
+        toSave[0] = result;
+
+        // create a new GeneralizedColumnHandle
+        GeneralizedColumnHandle new_handle;
+        GeneralizedColumnPointer new_pointer;
+        new_pointer.result = malloc(sizeof(Result));
+        new_pointer.result->data_type = DOUBLE;
+        new_pointer.result->num_tuples = 1;
+        new_pointer.result->payload = (void*) toSave;
+        GeneralizedColumn gen_column = {
+            .column_type = RESULT,
+            .column_pointer = new_pointer
+        };
+        new_handle.generalized_column = gen_column;
+        strcpy(new_handle.name, handle);
+
+        // search for context and add to the list of variables
+        if (checkContextSize(context) != true) {
+            send_message->status = EXECUTION_ERROR;
+            return "-- Problem inserting new handle into client context.";
+        }
+        context->chandle_table[context->chandles_in_use++] = new_handle;
+
+        send_message->status = OK_DONE;
+        return "Successfully completed computation in math query.";
+    } else {
+        size_t num_tuples;
+        int* payload1;
+        int* payload2;
+        
+        // handle variable vs. database queries separately for first argument
+        if (math.is_var == true) {
+            // search for result in context
+            Result* result = findHandle(context, math.params[0])->generalized_column.column_pointer.result;
+            if (result == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified result source.";
+            }
+            num_tuples = result->num_tuples;
+            payload1 = (int*) result->payload;
+            
+            // handle variable vs. database queries separately for second argument
+            if (math.num_params == 2) {
+                // search for result in context
+                result = findHandle(context, math.params[1])->generalized_column.column_pointer.result;
+                if (result == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified result source.";
+                }
+                payload2 = (int*) result->payload;
+            } else {
+                // check database
+                if (strcmp(math.params[1], current_db->name) != 0) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Database not found.";
+                }
+
+                // if we didn't manage to find a table
+                Table* table = findTable(math.params[2]);
+                if (table == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified table.";
+                }
+
+                // if we didn't manage to find a column
+                Column* column = findColumn(table, math.params[3]);
+                if (column == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified column.";
+                }
+
+                payload2 = column->data;
+            }
+        } else {
+            // check database
+            if (strcmp(math.params[0], current_db->name) != 0) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Database not found.";
+            }
+
+            // if we didn't manage to find a table
+            Table* table = findTable(math.params[1]);
+            if (table == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified table.";
+            }
+
+            // if we didn't manage to find a column
+            Column* column = findColumn(table, math.params[2]);
+            if (column == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified column.";
+            }
+
+            num_tuples = table->num_rows;
+            payload1 = column->data;
+            
+            // handle variable vs. database queries separately for second argument
+            if (math.num_params == 4) {
+                // search for result in context
+                Result* result = findHandle(context, math.params[3])->generalized_column.column_pointer.result;
+                if (result == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified result source.";
+                }
+                payload2 = (int*) result->payload;
+            } else {
+                // check database
+                if (strcmp(math.params[3], current_db->name) != 0) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Database not found.";
+                }
+
+                // if we didn't manage to find a table
+                Table* table = findTable(math.params[4]);
+                if (table == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified table.";
+                }
+
+                // if we didn't manage to find a column
+                Column* column = findColumn(table, math.params[5]);
+                if (column == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified column.";
+                }
+
+                payload2 = column->data;
+            }
+        }
+
+        int* result = malloc(sizeof(int) * num_tuples);
+        switch (math.type) {
+            case ADD: {
+                for (size_t i = 0; i < num_tuples; i++) {
+                    result[i] = payload1[i] + payload2[i];
+                }
+                break;
+            }
+            case SUB: {
+                for (size_t i = 0; i < num_tuples; i++) {
+                    result[i] = payload1[i] - payload2[i];
+                }
+                break;
+            }
+            default:
+                break;
+        }
+
+        // create a new GeneralizedColumnHandle
+        GeneralizedColumnHandle new_handle;
+        GeneralizedColumnPointer new_pointer;
+        new_pointer.result = malloc(sizeof(Result));
+        new_pointer.result->data_type = INT;
+        new_pointer.result->num_tuples = num_tuples;
+        new_pointer.result->payload = (void*) result;
+        GeneralizedColumn gen_column = {
+            .column_type = RESULT,
+            .column_pointer = new_pointer
+        };
+        new_handle.generalized_column = gen_column;
+        strcpy(new_handle.name, handle);
+
+        // search for context and add to the list of variables
+        if (checkContextSize(context) != true) {
+            send_message->status = EXECUTION_ERROR;
+            return "-- Problem inserting new handle into client context.";
+        }
+        context->chandle_table[context->chandles_in_use++] = new_handle;
+
+        send_message->status = OK_DONE;
+        return "Successfully completed computation in math query.";
+    }    
 }
