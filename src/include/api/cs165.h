@@ -22,9 +22,23 @@ typedef struct Column {
     char name[MAX_SIZE_NAME + 1];
     int* data;
 } Column;
+typedef enum IndexType {
+    BTREE,
+    SORTED
+} IndexType;
+typedef union IndexObject {
+    Column* column;
+    // BTree* btree;
+} IndexObject;
+typedef struct Index {
+    IndexObject object;
+    IndexType type;
+    bool clustered;
+} Index;
 typedef struct Table {
     char name [MAX_SIZE_NAME + 1];
     Column** columns;
+    Index** indexes;
     size_t col_count;
     size_t num_rows;
     size_t capacity;
@@ -77,15 +91,15 @@ typedef struct Status {
 
 // =============== EXECUTION ===============
 typedef enum OperatorType { 
-    CREATE, 
-    INSERT,
-    LOADER,
-    SELECT,
-    PRINT,
-    FETCH,
-    MATH
+    OP_CREATE, 
+    OP_INSERT,
+    OP_LOADER,
+    OP_SELECT,
+    OP_PRINT,
+    OP_FETCH,
+    OP_MATH
 } OperatorType;
-typedef enum CreateType { CREATE_DATABASE, CREATE_TABLE, CREATE_COLUMN } CreateType;
+typedef enum CreateType { CREATE_DB, CREATE_TBL, CREATE_COL, CREATE_IDX } CreateType;
 typedef enum MathType { AVG, SUM, MAX, MIN, ADD, SUB } MathType;
 typedef struct CreateOperator {
     CreateType type;

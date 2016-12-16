@@ -35,7 +35,7 @@ DbOperator* parse_fetch(char* arguments, message* response, char* handle) {
 
     // create fetch operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
-    dbo->type = FETCH;
+    dbo->type = OP_FETCH;
     dbo->fields.fetch.col_name = token;
     dbo->fields.fetch.db_name = strsep(&dbo->fields.fetch.col_name, ".");
     dbo->fields.fetch.tbl_name = strsep(&dbo->fields.fetch.col_name, ".");

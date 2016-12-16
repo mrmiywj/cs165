@@ -44,23 +44,30 @@ DbOperator* parse_select(char* arguments, message* response, char* handle) {
 
     // create select operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
-    dbo->type = SELECT;
-    dbo->fields.select.handle = handle;
+    dbo->type = OP_SELECT;
     if (arg4 == NULL) {
-        dbo->fields.select.params = malloc(sizeof(char*) * 3);
-        dbo->fields.select.params[0] = (char*) strsep(&arg1, ".");
-        dbo->fields.select.params[1] = (char*) strsep(&arg1, ".");
-        dbo->fields.select.params[2] = arg1;
-        dbo->fields.select.minimum = (strcmp("null", arg2) == 0) ? INT_MIN : atoi(arg2);
-        dbo->fields.select.maximum = (strcmp("null", arg3) == 0) ? INT_MAX : atoi(arg3);
-        dbo->fields.select.src_is_var = false;
+        char** params = malloc(sizeof(char*) * 3);
+        params[0] = (char*) strsep(&arg1, ".");
+        params[1] = (char*) strsep(&arg1, ".");
+        params[2] = arg1;
+        dbo->fields.select = (SelectOperator) {
+            .handle = handle,
+            .params = params,
+            .minimum = (strcmp("null", arg2) == 0) ? INT_MIN : atoi(arg2),
+            .maximum = (strcmp("null", arg3) == 0) ? INT_MAX : atoi(arg3),
+            .src_is_var = false
+        };
     } else {
-        dbo->fields.select.params = malloc(sizeof(char*) * 2);
-        dbo->fields.select.params[0] = arg1;
-        dbo->fields.select.params[1] = arg2;
-        dbo->fields.select.minimum = (strcmp("null", arg3) == 0) ? INT_MIN : atoi(arg3);
-        dbo->fields.select.maximum = (strcmp("null", arg4) == 0) ? INT_MAX : atoi(arg4);
-        dbo->fields.select.src_is_var = true;
+        char** params = malloc(sizeof(char*) * 2);
+        params[0] = arg1;
+        params[1] = arg2;
+        dbo->fields.select = (SelectOperator) {
+            .handle = handle,
+            .params = params,
+            .minimum = (strcmp("null", arg3) == 0) ? INT_MIN : atoi(arg3),
+            .maximum = (strcmp("null", arg4) == 0) ? INT_MAX : atoi(arg4),
+            .src_is_var = true
+        };
     }
     return dbo;
 }

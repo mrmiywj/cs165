@@ -37,8 +37,10 @@ DbOperator* parse_print(char* arguments, message* response) {
 
     // create print operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
-    dbo->type = PRINT;
-    dbo->fields.print.handles = handles;
-    dbo->fields.print.num_params = num_args;
+    dbo->type = OP_PRINT;
+    dbo->fields.print = (PrintOperator) {
+        .handles = handles,
+        .num_params = num_args
+    };
     return dbo;
 }

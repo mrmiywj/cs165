@@ -36,22 +36,22 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
 
     char* res = NULL;
     switch(query->type) {
-    case CREATE:
+    case OP_CREATE:
         res = handleCreateQuery(query, send_message);
         break;
-    case INSERT:
+    case OP_INSERT:
         res = handleInsertQuery(query, send_message);
         break;
-    case SELECT:
+    case OP_SELECT:
         res = handleSelectQuery(query, send_message);
         break;
-    case FETCH:
+    case OP_FETCH:
         res = handleFetchQuery(query, send_message);
         break;
-    case PRINT:
+    case OP_PRINT:
         res = handlePrintQuery(query, send_message);
         break;
-    case MATH:
+    case OP_MATH:
         res = handleMathQuery(query, send_message);
         break;
     default:
@@ -68,7 +68,7 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
 
 // ================ HANDLERS ================
 char* handleCreateQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != CREATE) {
+    if (query == NULL || query->type != OP_CREATE) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query.";
     }
@@ -78,7 +78,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
     
     OperatorFields fields = query->fields;
     switch (fields.create.type) {
-    case CREATE_DATABASE:
+    case CREATE_DB:
         // check for params
         if (fields.create.num_params != 1) {
             send_message->status = INCORRECT_FORMAT;
@@ -109,12 +109,13 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         // finished successfully
         send_message->status = OK_DONE;
         return "-- Successfully created db.";
-    case CREATE_TABLE:
+    
+    case CREATE_TBL:
         log_info("Creating table...\n");
         // check for params
         if (fields.create.num_params != 3) {
             send_message->status = INCORRECT_FORMAT;
-            return "-- Incorrect number of arguments when creating db.";
+            return "-- Incorrect number of arguments when creating table.";
         }
 
         // extract params and validate
@@ -147,6 +148,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         Table* new_table = malloc(sizeof(Table));
         strcpy(new_table->name, tbl_name);
         new_table->columns = NULL;
+        new_table->indexes = NULL;
         new_table->col_count = 0;
         new_table->num_rows = 0;
         new_table->capacity = 0;
@@ -155,11 +157,12 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         // finished successfully
         send_message->status = OK_DONE;
         return "-- Successfully created table.";
-    case CREATE_COLUMN:
+    
+    case CREATE_COL:
         // check for params
         if (fields.create.num_params != 3) {
             send_message->status = INCORRECT_FORMAT;
-            return "-- Incorrect number of arguments when creating db.";
+            return "-- Incorrect number of arguments when creating column.";
         }
         
         // extract params and validate
@@ -168,7 +171,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         col_name = fields.create.params[2];
         if (strcmp(current_db->name, db_name) != 0) {
             send_message->status = QUERY_UNSUPPORTED;
-            return "-- Cannot create column in inactive db.";
+            return "-- Cannot create index in inactive db.";
         }
 
         // create a column file
@@ -205,6 +208,58 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
         // finished successfully
         send_message->status = OK_DONE;
         return "-- Successfully created column.";
+    
+    case CREATE_IDX:
+        // check for params
+        if (fields.create.num_params != 5) {
+            send_message->status = INCORRECT_FORMAT;
+            return "-- Incorrect number of arguments when creating index.";
+        }
+        
+        // extract params and validate
+        db_name = fields.create.params[0];
+        tbl_name = fields.create.params[1];
+        col_name = fields.create.params[2];
+        // if (strcmp(current_db->name, db_name) != 0) {
+        //     send_message->status = QUERY_UNSUPPORTED;
+        //     return "-- Cannot create column in inactive db.";
+        // }
+
+        // // create a column file
+        // if (createColumn(db_name, tbl_name, col_name) != 0) {
+        //     send_message->status = EXECUTION_ERROR;
+        //     return "-- Error creating column.";
+        // }
+
+        // // if we didn't manage to find a table
+        // Table* table = findTable(tbl_name);
+        // if (table == NULL) {
+        //     send_message->status = INCORRECT_FORMAT;
+        //     return "-- Unable to find specified table.";
+        // } 
+        
+        // // found the correct table, insert new column
+        // if (table->columns == NULL) {
+        //     table->columns = calloc(1, sizeof(Column*));
+        // } else {
+        //     size_t new_num = table->col_count + 1;
+        //     Column** new_cols = realloc(table->columns, new_num * sizeof(Column*)); 
+        //     if (new_cols == NULL) {
+        //         send_message->status = EXECUTION_ERROR;
+        //         return "-- Unable to create new column.";
+        //     }
+        //     table->columns = new_cols;
+        // }
+        // Column* new_col = malloc(sizeof(Column));
+        // strcpy(new_col->name, col_name);
+        // new_col->data = NULL;
+        // table->columns[table->col_count] = new_col;
+        // table->col_count++;
+
+        // // finished successfully
+        // send_message->status = OK_DONE;
+        // return "-- Successfully created column.";
+    
     default:
         break;
     }
@@ -212,7 +267,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
 }
 
 char* handleInsertQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != INSERT) {
+    if (query == NULL || query->type != OP_INSERT) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }
@@ -273,7 +328,7 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
 }
 
 char* handleSelectQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != SELECT) {
+    if (query == NULL || query->type != OP_SELECT) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }
@@ -431,7 +486,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
 }
 
 char* handleFetchQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != FETCH) {
+    if (query == NULL || query->type != OP_FETCH) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }
@@ -520,7 +575,7 @@ char* handleFetchQuery(DbOperator* query, message* send_message) {
 }
 
 char* handlePrintQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != PRINT) {
+    if (query == NULL || query->type != OP_PRINT) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }
@@ -638,7 +693,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
 }
 
 char* handleMathQuery(DbOperator* query, message* send_message) {
-    if (query == NULL || query->type != MATH) {
+    if (query == NULL || query->type != OP_MATH) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }

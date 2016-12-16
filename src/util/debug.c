@@ -15,19 +15,22 @@ void printDbOperator(DbOperator* query) {
     OperatorFields fields = query->fields;
     /* DbOperator.type */
     switch (query->type) {
-        case CREATE:
+        case OP_CREATE:
             log_info("\tType: CREATE\n");
             // DbOperator.fields.create.type
             CreateType type = fields.create.type;
             switch (type) {
-            case CREATE_DATABASE:
+            case CREATE_DB:
                 log_info("\tCreate Type: DATABASE\n");
                 break;
-            case CREATE_TABLE:
+            case CREATE_TBL:
                 log_info("\tCreate Type: TABLE\n");
                 break;
-            case CREATE_COLUMN:
+            case CREATE_COL:
                 log_info("\tCreate Type: COLUMN\n");
+                break;
+            case CREATE_IDX:
+                log_info("\tCreate Type: INDEX\n");
                 break;
             default:
                 break;
@@ -39,7 +42,7 @@ void printDbOperator(DbOperator* query) {
                 log_info("\t    %4i: %s\n", i, fields.create.params[i]);
             }
             break;
-        case INSERT:
+        case OP_INSERT:
             log_info("\tType: INSERT\n");
             /* DbOperator.fields.insert.table.name */
             if (fields.insert.tbl_name == NULL) {
@@ -60,7 +63,7 @@ void printDbOperator(DbOperator* query) {
             /* DbOperator.fields.insert.num_values */
             log_info("\t# values: %i\n", fields.insert.num_values);
             break;
-        case LOADER:
+        case OP_LOADER:
             log_info("\tType: LOADER\n");
             /* DbOperator.fields.loader.db_name */
             if (fields.loader.file_name == NULL) {
@@ -69,7 +72,7 @@ void printDbOperator(DbOperator* query) {
                 log_info("\tLoader: database %s\n", fields.loader.file_name);
             }
             break;
-        case SELECT:
+        case OP_SELECT:
             log_info("\tType: SELECT\n");
             log_info("\t    TARGET HANDLE: %s\n", fields.select.handle);
             log_info("\t    SRC: %s\n", (fields.select.src_is_var) ? "VAR" : "DB");
@@ -84,13 +87,13 @@ void printDbOperator(DbOperator* query) {
             log_info("\t    MIN: %i\n", fields.select.minimum);
             log_info("\t    MAX: %i\n", fields.select.maximum);
             break;
-        case PRINT:
+        case OP_PRINT:
             log_info("\tType: PRINT\n");
             for (size_t i = 0; i < fields.print.num_params; i++) {
                 log_info("\t    HANDLES: %s\n", fields.print.handles[i]);
             }
             break;
-        case FETCH:
+        case OP_FETCH:
             log_info("\tType: FETCH\n");
             log_info("\t    DB: %s\n", fields.fetch.db_name);
             log_info("\t    TBL: %s\n", fields.fetch.tbl_name);
@@ -98,7 +101,7 @@ void printDbOperator(DbOperator* query) {
             log_info("\t    SOURCE: %s\n", fields.fetch.source);
             log_info("\t    TARGET: %s\n", fields.fetch.target);
             break;
-        case MATH:
+        case OP_MATH:
             log_info("\tType: MATH\n");
             log_info("\t    MathType: %i\n", fields.math.type);
             for (size_t i = 0; i < fields.math.num_params; i++) {

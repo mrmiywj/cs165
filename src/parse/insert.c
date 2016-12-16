@@ -23,7 +23,7 @@ DbOperator* parse_insert(char* arguments, message* response) {
     
     // create insert operator object
     DbOperator* dbo = calloc(1, sizeof(DbOperator));
-    dbo->type = INSERT;
+    dbo->type = OP_INSERT;
     dbo->fields.insert.tbl_name = table_name;
     
     // get values from query

@@ -81,11 +81,13 @@ DbOperator* parse_math(char* arguments, message* response, char* handle, MathTyp
 
     // create select operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
-    dbo->type = MATH;
-    dbo->fields.math.type = type;
-    dbo->fields.math.handle = handle;
-    dbo->fields.math.params = params;
-    dbo->fields.math.num_params = num_tokens;
-    dbo->fields.math.is_var = is_var;
+    dbo->type = OP_MATH;
+    dbo->fields.math = (MathOperator) {
+        .type = type,
+        .handle = handle,
+        .params = params,
+        .num_params = num_tokens,
+        .is_var = is_var
+    };
     return dbo;
 }

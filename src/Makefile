@@ -10,7 +10,7 @@ OS := $(shell uname)
 ifeq ($(OS),Darwin)
 CC = gcc -std=c99 -g -ggdb3
 else
-CC = gcc -std=c99 -g -ggdb3 -D_BSD_SOURCE
+CC = gcc -std=c99 -g -ggdb3 -D_BSD_SOURCE -D LOG -D LOG_ERR -D LOG_INFO
 endif
 
 # Default optimization level

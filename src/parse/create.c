@@ -35,11 +35,18 @@ DbOperator* parse_create(char* arguments, message* response) {
         return parse_create_tbl(copy, response);
     if (strcmp(token, "col") == 0)
         return parse_create_col(copy, response);
+    if (strcmp(token, "idx") == 0)
+        return parse_create_idx(copy, response);
     
     // fall-through; if no valid operator has been returned, return NULL
     response->status = UNKNOWN_COMMAND;
     return NULL;
 }
+
+/**
+ * This method takes in a string representing the arguments to create a database.
+ * It parses those arguments, checks that they are valid, and creates a database.
+ **/
 
 DbOperator* parse_create_db(char* arguments, message* response) {
     response->status = OK_DONE;
@@ -68,11 +75,11 @@ DbOperator* parse_create_db(char* arguments, message* response) {
     
     // create DbOperator and return
     DbOperator* result = malloc(sizeof(DbOperator));
-    result->type = CREATE;
+    result->type = OP_CREATE;
     char** params = malloc(sizeof(char*));
     params[0] = db_name;
     result->fields.create = (CreateOperator) {
-        .type = CREATE_DATABASE, 
+        .type = CREATE_DB, 
         .params = params, 
         .num_params = 1
     };
@@ -114,13 +121,13 @@ DbOperator* parse_create_tbl(char* arguments, message* response) {
     
     // create DbOperator and return
     DbOperator* result = malloc(sizeof(DbOperator));
-    result->type = CREATE;
+    result->type = OP_CREATE;
     char** params = malloc(3 * sizeof(char*));
     params[0] = db_name;
     params[1] = table_name;
     params[2] = col_cnt;
     result->fields.create = (CreateOperator) {
-        .type = CREATE_TABLE, 
+        .type = CREATE_TBL, 
         .params = params,
         .num_params = 3
     };
@@ -165,13 +172,74 @@ DbOperator* parse_create_col(char* arguments, message* response) {
 
     // create DbOperator and return
     DbOperator* result = malloc(sizeof(DbOperator));
-    result->type = CREATE;
+    result->type = OP_CREATE;
     char** params = malloc(3 * sizeof(char*));
     params[0] = db_name;
     params[1] = tbl_name;
     params[2] = col_name;
     result->fields.create = (CreateOperator) {
-        .type = CREATE_COLUMN, 
+        .type = CREATE_COL, 
+        .params = params,
+        .num_params = 3
+    };
+    return result;
+}
+
+/**
+ * This method takes in a string representing the arguments to create an index.
+ * It parses those arguments, checks that they are valid, and creates an index.
+ **/
+
+DbOperator* parse_create_idx(char* arguments, message* response) {
+    response->status = OK_DONE;
+    char** arguments_index = &arguments;
+    char* col_path = next_token(arguments_index, &(response->status));
+    char* type = next_token(arguments_index, &(response->status));
+    char* cluster = next_token(arguments_index, &(response->status));
+    
+    // check for # of arguments
+    if (response->status == INCORRECT_FORMAT)
+        return NULL;
+    if (arguments_index != NULL) {
+        response->status = INCORRECT_FORMAT;
+        return NULL;
+    }
+    // check and chop off ending parenthesis
+    int last_char = strlen(cluster) - 1;
+    if (cluster[last_char] != ')') {
+        response->status = INCORRECT_FORMAT;
+        return NULL;
+    }
+    cluster[last_char] = '\0';
+
+    // pull out database and table from table_path
+    char* db_name = strsep(&col_path, ".");
+    if (db_name == NULL) {
+        response->status = INCORRECT_FORMAT;
+        return NULL;
+    }
+    char* tbl_name = strsep(&col_path, ".");
+    if (tbl_name == NULL) {
+        response->status = INCORRECT_FORMAT;
+        return NULL;
+    }
+    char* col_name = strsep(&col_path, ".");
+    if (col_name == NULL || col_path != NULL) {
+        response->status = INCORRECT_FORMAT;
+        return NULL;
+    }
+
+    // create DbOperator and return
+    DbOperator* result = malloc(sizeof(DbOperator));
+    result->type = OP_CREATE;
+    char** params = malloc(5 * sizeof(char*));
+    params[0] = db_name;
+    params[1] = tbl_name;
+    params[2] = col_name;
+    params[3] = type;
+    params[4] = cluster;
+    result->fields.create = (CreateOperator) {
+        .type = CREATE_IDX, 
         .params = params,
         .num_params = 3
     };
