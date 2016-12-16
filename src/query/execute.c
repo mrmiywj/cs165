@@ -277,34 +277,18 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
         send_message->status = QUERY_UNSUPPORTED;
         return "Invalid query."; 
     }
-
+    
     // retrieve params
     SelectOperator select = query->fields.select;
-    char* db_name = select.db_name;
-    char* tbl_name = select.tbl_name;
-    char* col_name = select.col_name;
-    char* var_name = select.var_name;
+    char* handle = select.handle;
     int minimum = select.minimum;
     int maximum = select.maximum;
-    
-    // check database
-    if (strcmp(db_name, current_db->name) != 0) {
-        send_message->status = OBJECT_NOT_FOUND;
-        return "-- Database not found.";
-    }
 
-    // if we didn't manage to find a table
-    Table* table = findTable(tbl_name);
-    if (table == NULL) {
+    // search for context and add to the list of variables
+    ClientContext* context = searchContext(query->client_fd);
+    if (context == NULL) {
         send_message->status = OBJECT_NOT_FOUND;
-        return "-- Unable to find specified table.";
-    }
-
-    // if we didn't manage to find a column
-    Column* column = findColumn(table, col_name);
-    if (column == NULL) {
-        send_message->status = OBJECT_NOT_FOUND;
-        return "-- Unable to find specified column.";
+        return "-- Error finding client context for search.";
     }
 
     // create a new GeneralizedColumnHandle
@@ -319,42 +303,106 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
         .column_pointer = new_pointer
     };
     new_handle.generalized_column = gen_column;
-    strcpy(new_handle.name, var_name);
+    strcpy(new_handle.name, handle);
 
-    // scan through column and store all data in tuples
-    int capacity = 0;
-    int num_inserted = 0;
-    int* data = NULL;
-    for (size_t i = 0; i < table->num_rows; i++) {
-        if (column->data[i] < minimum || column->data[i] >= maximum)
-            continue;
-        if (num_inserted == capacity) {
-            capacity = (capacity == 0) ? 1 : 2 * capacity;
-            if (data == NULL) {
-                data = calloc(capacity, sizeof(int));
-            } else {
-                int* new_data = realloc(data, sizeof(int) * capacity);
-                if (new_data == NULL) {
-                    free(new_data);
-                    free(new_pointer.result);
-                    send_message->status = EXECUTION_ERROR;
-                    return "-- Error calculating result array.";
-                }
-                data = new_data;   
-            }
+    // handle variable select sources separately from database sources
+    if (select.src_is_var) {
+        GeneralizedColumnHandle* src_handle = findHandle(context, select.params[0]);
+        GeneralizedColumnHandle* val_handle = findHandle(context, select.params[1]);
+        if (src_handle == NULL || val_handle == NULL) {
+            send_message->status = OBJECT_NOT_FOUND;
+            return "-- Unable to find specified select source.";
         }
-        data[num_inserted] = i;
-        num_inserted++;
-    }
-    new_pointer.result->payload = data;
-    new_pointer.result->num_tuples = num_inserted;
+        Result* src_result = src_handle->generalized_column.column_pointer.result;
+        Result* val_result = val_handle->generalized_column.column_pointer.result;
+        if (src_result == NULL || val_result == NULL) {
+            send_message->status = OBJECT_NOT_FOUND;
+            return "-- Unable to find specified select source.";
+        }
 
-    // search for context and add to the list of variables
-    ClientContext* context = searchContext(query->client_fd);
-    if (context == NULL) {
-        send_message->status = OBJECT_NOT_FOUND;
-        return "-- Error finding client context for search.";
+        // scan through column and store all data in tuples
+        int capacity = 0;
+        int num_inserted = 0;
+        int* data = NULL;
+        int* indexes = (int*) src_result->payload;
+        int* values = (int*) val_result->payload;
+        for (size_t i = 0; i < src_result->num_tuples; i++) {
+            if (values[i] < minimum || values[i] >= maximum) 
+                continue;
+            if (num_inserted == capacity) {
+                capacity = (capacity == 0) ? 1 : 2 * capacity;
+                if (data == NULL) {
+                    data = calloc(capacity, sizeof(int));
+                } else {
+                    int* new_data = realloc(data, sizeof(int) * capacity);
+                    if (new_data == NULL) {
+                        free(new_data);
+                        free(new_pointer.result);
+                        send_message->status = EXECUTION_ERROR;
+                        return "-- Error calculating result array.";
+                    }
+                    data = new_data;   
+                }
+            }
+            data[num_inserted] = indexes[i];
+            num_inserted++;
+        }
+        new_pointer.result->payload = data;
+        new_pointer.result->num_tuples = num_inserted;
+    } else {
+        char* db_name = select.params[0];
+        char* tbl_name = select.params[1];
+        char* col_name = select.params[2];
+
+        // check database
+        if (strcmp(db_name, current_db->name) != 0) {
+            send_message->status = OBJECT_NOT_FOUND;
+            return "-- Database not found.";
+        }
+
+        // if we didn't manage to find a table
+        Table* table = findTable(tbl_name);
+        if (table == NULL) {
+            send_message->status = OBJECT_NOT_FOUND;
+            return "-- Unable to find specified table.";
+        }
+
+        // if we didn't manage to find a column
+        Column* column = findColumn(table, col_name);
+        if (column == NULL) {
+            send_message->status = OBJECT_NOT_FOUND;
+            return "-- Unable to find specified column.";
+        }
+
+        // scan through column and store all data in tuples
+        int capacity = 0;
+        int num_inserted = 0;
+        int* data = NULL;
+        for (size_t i = 0; i < table->num_rows; i++) {
+            if (column->data[i] < minimum || column->data[i] >= maximum)
+                continue;
+            if (num_inserted == capacity) {
+                capacity = (capacity == 0) ? 1 : 2 * capacity;
+                if (data == NULL) {
+                    data = calloc(capacity, sizeof(int));
+                } else {
+                    int* new_data = realloc(data, sizeof(int) * capacity);
+                    if (new_data == NULL) {
+                        free(new_data);
+                        free(new_pointer.result);
+                        send_message->status = EXECUTION_ERROR;
+                        return "-- Error calculating result array.";
+                    }
+                    data = new_data;   
+                }
+            }
+            data[num_inserted] = i;
+            num_inserted++;
+        }
+        new_pointer.result->payload = data;
+        new_pointer.result->num_tuples = num_inserted;
     }
+
     if (context->chandles_in_use == context->chandle_slots) {
         int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
         if (context->chandle_table == NULL) {
@@ -371,7 +419,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
         }
     }
     // check for duplicate handle names
-    int dupIndex = findDuplicateHandle(context, var_name);
+    int dupIndex = findDuplicateHandle(context, handle);
     if (dupIndex < 0) {
         context->chandle_table[context->chandles_in_use++] = new_handle;
     } else {

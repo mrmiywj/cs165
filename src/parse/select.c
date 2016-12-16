@@ -41,14 +41,15 @@ DbOperator* parse_select(char* arguments, message* response, char* handle) {
         return NULL;
     }
     char* arg4 = copy;
-    
+
     // create select operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
     dbo->type = SELECT;
+    dbo->fields.select.handle = handle;
     if (arg4 == NULL) {
         dbo->fields.select.params = malloc(sizeof(char*) * 3);
-        dbo->fields.select.params[0] = (char*) strsep(arg1, ".");
-        dbo->fields.select.params[1] = (char*) strsep(arg1, ".");
+        dbo->fields.select.params[0] = (char*) strsep(&arg1, ".");
+        dbo->fields.select.params[1] = (char*) strsep(&arg1, ".");
         dbo->fields.select.params[2] = arg1;
         dbo->fields.select.minimum = (strcmp("null", arg2) == 0) ? INT_MIN : atoi(arg2);
         dbo->fields.select.maximum = (strcmp("null", arg3) == 0) ? INT_MAX : atoi(arg3);

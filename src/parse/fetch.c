@@ -33,12 +33,12 @@ DbOperator* parse_fetch(char* arguments, message* response, char* handle) {
         return NULL;
     }
 
-    // create select operator object
+    // create fetch operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
     dbo->type = FETCH;
     dbo->fields.fetch.col_name = token;
-    dbo->fields.fetch.db_name = strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.fetch.tbl_name = strsep(&dbo->fields.select.col_name, ".");
+    dbo->fields.fetch.db_name = strsep(&dbo->fields.fetch.col_name, ".");
+    dbo->fields.fetch.tbl_name = strsep(&dbo->fields.fetch.col_name, ".");
     dbo->fields.fetch.source = copy;
     dbo->fields.fetch.target = handle;
     return dbo;
