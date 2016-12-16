@@ -568,7 +568,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
             break;
     }
     values[length] = '\0';
-    printf("-- result printf: %s\n", values);
+    log_info("-- result printf: %s\n", values);
 
     send_message->status = OK_WAIT_FOR_RESPONSE;
     send_message->length = length;

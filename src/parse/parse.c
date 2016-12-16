@@ -50,7 +50,7 @@ DbOperator* process_query(char* query, message* send_message) {
     if (equals_pointer != NULL) {
         *equals_pointer = '\0';
         query = ++equals_pointer;
-        printf("Handle found: %s\n", handle);
+        log_info("Handle found: %s\n", handle);
     } else {
         handle = NULL;
         log_info("No handle found in query\n");
