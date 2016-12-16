@@ -25,31 +25,41 @@ DbOperator* parse_select(char* arguments, message* response, char* handle) {
     copy[len - 1] = '\0';
     
     // parse arguments
-    char* token = (char*) strsep(&copy, ",");
-    if (token == NULL) {
-        // invalid query format
+    char* arg1 = (char*) strsep(&copy, ",");
+    if (arg1 == NULL) {
         response->status = INCORRECT_FORMAT;
         return NULL;
     }
-
+    char* arg2 = (char*) strsep(&copy, ",");
+    if (arg2 == NULL) {
+        response->status = INCORRECT_FORMAT;
+        return NULL;
+    }
+    char* arg3 = (char*) strsep(&copy, ",");
+    if (arg3 == NULL) {
+        response->status = INCORRECT_FORMAT;
+        return NULL;
+    }
+    char* arg4 = copy;
+    
     // create select operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
     dbo->type = SELECT;
-    dbo->fields.select.col_name = token;
-    dbo->fields.select.db_name = (char*) strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.select.tbl_name = (char*) strsep(&dbo->fields.select.col_name, ".");
-    dbo->fields.select.var_name = handle;
-    char* lower = (char*) strsep(&copy, ",");
-    char* upper = copy;
-    if (strcmp("null", lower) == 0) {
-        dbo->fields.select.minimum = INT_MIN;
+    if (arg4 == NULL) {
+        dbo->fields.select.params = malloc(sizeof(char*) * 3);
+        dbo->fields.select.params[0] = (char*) strsep(arg1, ".");
+        dbo->fields.select.params[1] = (char*) strsep(arg1, ".");
+        dbo->fields.select.params[2] = arg1;
+        dbo->fields.select.minimum = (strcmp("null", arg2) == 0) ? INT_MIN : atoi(arg2);
+        dbo->fields.select.maximum = (strcmp("null", arg3) == 0) ? INT_MAX : atoi(arg3);
+        dbo->fields.select.src_is_var = false;
     } else {
-        dbo->fields.select.minimum = atoi(lower);
-    }
-    if (strcmp("null", upper) == 0) {
-        dbo->fields.select.maximum = INT_MAX;
-    } else {
-        dbo->fields.select.maximum = atoi(upper);
+        dbo->fields.select.params = malloc(sizeof(char*) * 2);
+        dbo->fields.select.params[0] = arg1;
+        dbo->fields.select.params[1] = arg2;
+        dbo->fields.select.minimum = (strcmp("null", arg3) == 0) ? INT_MIN : atoi(arg3);
+        dbo->fields.select.maximum = (strcmp("null", arg4) == 0) ? INT_MAX : atoi(arg4);
+        dbo->fields.select.src_is_var = true;
     }
     return dbo;
 }

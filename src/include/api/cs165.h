@@ -121,12 +121,11 @@ typedef struct LoaderOperator {
     char* file_name;
 } LoaderOperator;
 typedef struct SelectOperator {
-    char* db_name;
-    char* tbl_name;
-    char* col_name;
-    char* var_name;
+    char** params;
+    char* handle;
     int minimum;
     int maximum;
+    bool src_is_var;
 } SelectOperator;
 typedef struct FetchOperator {
     char* db_name;

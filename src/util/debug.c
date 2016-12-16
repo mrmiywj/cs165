@@ -71,9 +71,15 @@ void printDbOperator(DbOperator* query) {
             break;
         case SELECT:
             log_info("\tType: SELECT\n");
-            log_info("\t    DB: %s\n", fields.select.db_name);
-            log_info("\t    TBL: %s\n", fields.select.tbl_name);
-            log_info("\t    COL: %s\n", fields.select.col_name);
+            log_info("\t     SRC: %s\n", (fields.select.src_is_var) ? "VAR" : "DB");
+            if (fields.select.src_is_var) {
+                log_info("\t     DB: %s\n", fields.select.params[0]);
+                log_info("\t     TBL: %s\n", fields.select.params[1]);
+                log_info("\t     COL: %s\n", fields.select.params[2]);
+            } else {
+                log_info("\t     SRC: %s\n", fields.select.params[0]);
+                log_info("\t     VAL: %s\n", fields.select.params[1]);
+            }
             log_info("\t    MIN: %i\n", fields.select.minimum);
             log_info("\t    MAX: %i\n", fields.select.maximum);
             break;

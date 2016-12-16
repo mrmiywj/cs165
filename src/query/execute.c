@@ -550,6 +550,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
     
     char* values = malloc(sizeof(char) * (length + 1));
     values[0] = '\0';
+    
     // TODO: really inefficient because it iterates across results
     for (size_t i = 0; i < num_tuples; i++) {
         for (size_t j = 0; j < num_handles; j++) {
@@ -581,7 +582,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
         }
     }
     values[length] = '\0';
-    log_info("-- result printf: %s\n", values);
+    // log_info("-- result printf: %s\n", values);
 
     send_message->status = OK_WAIT_FOR_RESPONSE;
     send_message->length = length;
@@ -613,7 +614,12 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
         // handle variable vs. database queries separately
         if (math.is_var == true) {
             // search for result in context
-            Result* result = findHandle(context, math.params[0])->generalized_column.column_pointer.result;
+            GeneralizedColumnHandle* src_handle = findHandle(context, math.params[0]);
+            if (src_handle == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified result source.";
+            }
+            Result* result = src_handle->generalized_column.column_pointer.result;
             if (result == NULL) {
                 send_message->status = OBJECT_NOT_FOUND;
                 return "-- Unable to find specified result source.";
@@ -721,7 +727,12 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
         // handle variable vs. database queries separately for first argument
         if (math.is_var == true) {
             // search for result in context
-            Result* result = findHandle(context, math.params[0])->generalized_column.column_pointer.result;
+            GeneralizedColumnHandle* src_handle = findHandle(context, math.params[0]);
+            if (src_handle == NULL) {
+                send_message->status = OBJECT_NOT_FOUND;
+                return "-- Unable to find specified result source.";
+            }
+            Result* result = src_handle->generalized_column.column_pointer.result;
             if (result == NULL) {
                 send_message->status = OBJECT_NOT_FOUND;
                 return "-- Unable to find specified result source.";
@@ -732,7 +743,12 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
             // handle variable vs. database queries separately for second argument
             if (math.num_params == 2) {
                 // search for result in context
-                result = findHandle(context, math.params[1])->generalized_column.column_pointer.result;
+                src_handle = findHandle(context, math.params[1]);
+                if (src_handle == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified result source.";
+                }
+                result = src_handle->generalized_column.column_pointer.result;
                 if (result == NULL) {
                     send_message->status = OBJECT_NOT_FOUND;
                     return "-- Unable to find specified result source.";
@@ -788,7 +804,12 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
             // handle variable vs. database queries separately for second argument
             if (math.num_params == 4) {
                 // search for result in context
-                Result* result = findHandle(context, math.params[3])->generalized_column.column_pointer.result;
+                GeneralizedColumnHandle* src_handle = findHandle(context, math.params[3]);
+                if (src_handle == NULL) {
+                    send_message->status = OBJECT_NOT_FOUND;
+                    return "-- Unable to find specified result source.";
+                }
+                Result* result = src_handle->generalized_column.column_pointer.result;
                 if (result == NULL) {
                     send_message->status = OBJECT_NOT_FOUND;
                     return "-- Unable to find specified result source.";
