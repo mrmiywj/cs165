@@ -136,7 +136,8 @@ typedef struct FetchOperator {
     char* target;
 } FetchOperator;
 typedef struct PrintOperator {
-    char* handle;
+    char** handles;
+    size_t num_params;
 } PrintOperator;
 typedef struct MathOperator {
     MathType type;

@@ -477,9 +477,10 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
         return "Invalid query."; 
     }
 
-    // // retrieve params
+    // retrieve params
     PrintOperator print = query->fields.print;
-    char* handle = print.handle;
+    char** handles = print.handles;
+    size_t num_handles = print.num_params;
     
     // get context for current client
     ClientContext* context = searchContext(query->client_fd);
@@ -488,84 +489,96 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
         return "-- Unable to find context for current client.";
     }
 
-    // search for result in context
-    Result* result = findHandle(context, handle)->generalized_column.column_pointer.result;
-    if (result == NULL) {
-        send_message->status = OBJECT_NOT_FOUND;
-        return "-- Unable to find specified select source.";
+    // search for handles in context
+    Result* results[num_handles];
+    for (size_t i = 0; i < num_handles; i++) {
+        GeneralizedColumnHandle* columnHandle = findHandle(context, handles[i]);
+        if (columnHandle == NULL) {
+            send_message->status = OBJECT_NOT_FOUND;
+            return "-- Unable to find specified select source.";
+        }
+        Result* result = columnHandle->generalized_column.column_pointer.result;
+        if (result == NULL) {
+            send_message->status = OBJECT_NOT_FOUND;
+            return "-- Unable to find specified select source.";
+        }
+        results[i] = result;
     }
 
     // create string payload to return
     int length = 0;
     char buf[64];
-    switch (result->data_type) {
-        case INT: {
-            int* data = (int*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(buf, "%i", data[i]);
-                length += strlen(buf) + 1;
+    size_t num_tuples = results[0]->num_tuples;
+    for (size_t i = 0; i < num_handles; i++) {
+        switch(results[i]->data_type) {
+            case INT: {
+                int* data = (int*) results[i]->payload;
+                for (size_t i = 0; i < num_tuples; i++) {
+                    sprintf(buf, "%i", data[i]);
+                    length += strlen(buf) + 1;
+                }
+                break;
             }
-            break;
-        }
-        case LONG: {
-            long* data = (long*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(buf, "%ld", data[i]);
-                length += strlen(buf) + 1;
+            case LONG: {
+                long* data = (long*) results[i]->payload;
+                for (size_t i = 0; i < num_tuples; i++) {
+                    sprintf(buf, "%ld", data[i]);
+                    length += strlen(buf) + 1;
+                }
+                break;
             }
-            break;
-        }
-        case FLOAT: {
-            float* data = (float*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(buf, "%f", data[i]);
-                length += strlen(buf) + 1;
+            case FLOAT: {
+                float* data = (float*) results[i]->payload;
+                for (size_t i = 0; i < num_tuples; i++) {
+                    sprintf(buf, "%f", data[i]);
+                    length += strlen(buf) + 1;
+                }
+                break;
             }
-            break;
-        }
-        case DOUBLE: {
-            double* data = (double*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(buf, "%f", data[i]);
-                length += strlen(buf) + 1;
+            case DOUBLE: {
+                double* data = (double*) results[i]->payload;
+                for (size_t i = 0; i < num_tuples; i++) {
+                    sprintf(buf, "%f", data[i]);
+                    length += strlen(buf) + 1;
+                }
+                break;
             }
-            break;
+            default:
+                break;
         }
-        default:
-            break;
     }
+    
     char* values = malloc(sizeof(char) * (length + 1));
     values[0] = '\0';
-    switch (result->data_type) {
-        case INT: {
-            int* data = (int*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(values, "%s%i\n", values, data[i]);
+    // TODO: really inefficient because it iterates across results
+    for (size_t i = 0; i < num_tuples; i++) {
+        for (size_t j = 0; j < num_handles; j++) {
+            char delim = (j + 1 == num_handles) ? '\n' : ',';
+            switch (results[j]->data_type) {
+                case INT: {
+                    int* data = (int*) results[j]->payload;
+                    sprintf(values, "%s%i%c", values, data[i], delim);
+                    break;
+                }
+                case LONG: {
+                    long* data = (long*) results[j]->payload;
+                    sprintf(values, "%s%ld%c", values, data[i], delim);
+                    break;
+                }
+                case FLOAT: {
+                    float* data = (float*) results[j]->payload;
+                    sprintf(values, "%s%f%c", values, data[i], delim);
+                    break;
+                }
+                case DOUBLE: {
+                    double* data = (double*) results[j]->payload;
+                    sprintf(values, "%s%f%c", values, data[i], delim);
+                    break;
+                }
+                default:
+                    break;
             }
-            break;
         }
-        case LONG: {
-            long* data = (long*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(values, "%s%ld\n", values, data[i]);
-            }
-            break;
-        }
-        case FLOAT: {
-            float* data = (float*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(values, "%s%f\n", values, data[i]);
-            }
-            break;
-        }
-        case DOUBLE: {
-            double* data = (double*) result->payload;
-            for (size_t i = 0; i < result->num_tuples; i++) {
-                sprintf(values, "%s%f\n", values, data[i]);
-            }
-        }
-        default:
-            break;
     }
     values[length] = '\0';
     log_info("-- result printf: %s\n", values);

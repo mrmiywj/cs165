@@ -25,9 +25,20 @@ DbOperator* parse_print(char* arguments, message* response) {
     }
     copy[len - 1] = '\0';
 
+    // search for number of arguments
+    size_t num_args = 1;
+    for (size_t i = 0; i < strlen(copy); i++)
+        num_args += copy[i] == ',';
+    
+    // allocate enough space and place tokens in array
+    char** handles = malloc(sizeof(char*) * num_args);
+    for (size_t i = 0; i < num_args; i++)
+        handles[i] = strsep(&copy, ",");
+
     // create print operator object
     DbOperator* dbo = malloc(sizeof(DbOperator));
     dbo->type = PRINT;
-    dbo->fields.print.handle = copy;
+    dbo->fields.print.handles = handles;
+    dbo->fields.print.num_params = num_args;
     return dbo;
 }

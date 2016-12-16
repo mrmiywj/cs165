@@ -79,7 +79,9 @@ void printDbOperator(DbOperator* query) {
             break;
         case PRINT:
             log_info("\tType: PRINT\n");
-            log_info("\t    HANDLE: %s\n", fields.print.handle);
+            for (size_t i = 0; i < fields.print.num_params; i++) {
+                log_info("\t    HANDLES: %s\n", fields.print.handles[i]);
+            }
             break;
         case FETCH:
             log_info("\tType: FETCH\n");
