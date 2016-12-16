@@ -28,7 +28,7 @@ GeneralizedColumnHandle* findHandle(ClientContext* context, char* handle) {
 
 int findDuplicateHandle(ClientContext* context, char* handle) {
     for (int i = 0; i < context->chandles_in_use; i++) {
-        if (strncmp(context->chandle_table[i].name, handle, strlen(handle)) == 0) {
+        if (strcmp(context->chandle_table[i].name, handle) == 0) {
             // destroyColumnHandle(context->chandle_table[i]);
             return i;
         }
