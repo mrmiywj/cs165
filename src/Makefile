@@ -6,7 +6,12 @@
 all: client server
 
 # C-compiler settings
+OS := $(shell uname)
+ifeq ($(OS),Darwin)
+CC = gcc -std=c99 -g -ggdb3
+else
 CC = gcc -std=c99 -g -ggdb3 -D_BSD_SOURCE
+endif
 
 # Default optimization level
 O ?= 0
