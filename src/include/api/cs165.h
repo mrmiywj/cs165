@@ -68,26 +68,6 @@ typedef struct ClientContext {
     int client_fd;
 } ClientContext;
 
-// ================ QUERIES ================
-struct Comparator;
-
-typedef enum ComparatorType {
-    NO_COMPARISON = 0,
-    LESS_THAN = 1,
-    GREATER_THAN = 2,
-    EQUAL = 4,
-    LESS_THAN_OR_EQUAL = 5,
-    GREATER_THAN_OR_EQUAL = 6
-} ComparatorType;
-typedef struct Comparator {
-    long int p_low; // used in equality and ranges.
-    long int p_high; // used in range compares. 
-    GeneralizedColumn* gen_col;
-    ComparatorType type1;
-    ComparatorType type2;
-    char* handle;
-} Comparator;
-
 // ================ STATUS ================
 typedef enum StatusCode { OK, ERROR } StatusCode;
 typedef struct Status {
@@ -98,7 +78,7 @@ typedef struct Status {
 // =============== EXECUTION ===============
 typedef enum OperatorType { 
     CREATE, 
-    INSERT, 
+    INSERT,
     LOADER,
     SELECT,
     PRINT,
