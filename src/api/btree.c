@@ -171,7 +171,7 @@ bool insertValueLeaf(BTreeLeaf* leaf, int value, int index) {
         leaf->indexes[j+1] = leaf->indexes[j];
     }
     leaf->values[i] = value;
-    leaf->values[i] = index;
+    leaf->indexes[i] = index;
     leaf->num_elements++;
     return true;
 }
@@ -289,7 +289,7 @@ void printTreeHelper(BTreeNode* tree, char* prefix) {
             log_info("%sLEAF   (%p) has %i values\n", prefix, tree, tree->object.leaf.num_elements);
             log_info("%s    Values: [ ", prefix);
             for (size_t i = 0; i < tree->object.leaf.num_elements; i++) {
-                log_info("%i ", tree->object.leaf.values[i]);
+                log_info("(%i, %i) ", tree->object.leaf.values[i], tree->object.leaf.indexes[i]);
             }
             log_info("]\n");
             break;
@@ -308,7 +308,7 @@ void traverse(BTreeNode* tree) {
     BTreeLeaf* leaf = &(ptr->object.leaf);
     while (leaf != NULL) {
         for (size_t i = 0; i < leaf->num_elements; i++) {
-            printf("%i\n", leaf->values[i]);
+            printf("(%i, %i)\n", leaf->values[i], leaf->indexes[i]);
         }
         leaf = leaf->next;
     }
