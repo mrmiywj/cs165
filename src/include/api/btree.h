@@ -11,35 +11,71 @@ typedef enum BTreeNodeType {
     LEAF
 } BTreeNodeType;
 
-// node structs
-typedef struct BTreeParent {
-    struct BTreeNode* children[2 * CAPACITY];
+// unclustered btree structs
+typedef struct BTreeUParent {
+    struct BTreeUNode* children[2 * CAPACITY];
     int dividers[2 * CAPACITY - 1];
-    struct BTreeParent* parent;
-    struct BTreeParent* next;
+    struct BTreeUParent* parent;
+    struct BTreeUParent* next;
     size_t num_children;
-} BTreeParent;
-typedef struct BTreeLeaf {
+} BTreeUParent;
+typedef struct BTreeULeaf {
     int values[2 * CAPACITY];
     int indexes[2 * CAPACITY];
-    struct BTreeParent* parent;
-    struct BTreeLeaf* next;
+    struct BTreeUParent* parent;
+    struct BTreeULeaf* next;
     size_t num_elements;
-} BTreeLeaf;
-typedef union BTreeObject {
-    struct BTreeParent parent;
-    struct BTreeLeaf leaf;
-} BTreeObject;
-typedef struct BTreeNode {
+} BTreeULeaf;
+typedef union BTreeUObject {
+    struct BTreeUParent parent;
+    struct BTreeULeaf leaf;
+} BTreeUObject;
+typedef struct BTreeUNode {
     BTreeNodeType type;
-    BTreeObject object;
-} BTreeNode;
+    BTreeUObject object;
+} BTreeUNode;
 
-BTreeNode* createBTree();
-void insertValue(BTreeNode** tree, int value, int index);
-void deleteValue(BTreeNode** tree, int value, int index);
-void updateValue(BTreeNode** tree, int value, int index, int new_value);
-void printTree(BTreeNode* tree);
-void traverse(BTreeNode* tree);
+// unclustered btree functions
+BTreeUNode* createBTreeU();
+void insertValueU(BTreeUNode** tree, int value, int index);
+void deleteValueU(BTreeUNode** tree, int value, int index);
+void updateValueU(BTreeUNode** tree, int value, int index, int new_value);
+void printTreeU(BTreeUNode* tree);
+void traverseU(BTreeUNode* tree);
+
+// clustered btree structs
+typedef struct BTreeCParent {
+    struct BTreeCNode* children[2 * CAPACITY];
+    int dividers[2 * CAPACITY - 1];
+    struct BTreeCParent* parent;
+    struct BTreeCParent* next;
+    size_t num_children;
+} BTreeCParent;
+typedef struct BTreeCLeaf {
+    int values[2 * CAPACITY];
+    int indexes[2 * CAPACITY];
+    struct BTreeCParent* parent;
+    struct BTreeCLeaf* next;
+    size_t num_elements;
+} BTreeCLeaf;
+typedef union BTreeCObject {
+    struct BTreeCParent parent;
+    struct BTreeCLeaf leaf;
+} BTreeCObject;
+typedef struct BTreeCNode {
+    BTreeNodeType type;
+    BTreeCObject object;
+} BTreeCNode;
+
+// clustered btree functions
+BTreeCNode* createBTreeC();
+// returns new index of inserted element
+size_t insertValueC(BTreeCNode** tree, int value);
+// delete an element at a specific index
+void deleteValueC(BTreeCNode** tree, int value, int index);
+// updates an element at a specific index and returns the new index
+size_t updateValueC(BTreeCNode** tree, int value, int index, int new_value);
+void printTreeC(BTreeCNode* tree);
+void traverseC(BTreeCNode* tree);
 
 #endif

@@ -33,7 +33,7 @@ typedef enum IndexSort {
 } IndexSort;
 typedef union IndexObject {
     Column* column;
-    struct BTreeNode* btree;
+    struct BTreeUNode* btree;
 } IndexObject;
 typedef struct Index {
     IndexObject object;
