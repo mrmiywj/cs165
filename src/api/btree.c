@@ -15,6 +15,7 @@ void createBTreeParent(BTreeParent* parent) {
 void createBTreeLeaf(BTreeLeaf* leaf) {
     *leaf = (BTreeLeaf) {
         .values = {0},
+        .indexes = {0},
         .parent = NULL,
         .next = NULL,
         .num_elements = 0
@@ -27,11 +28,11 @@ BTreeNode* createBTree() {
     return new_node;
 }
 
-bool insertValueParent(BTreeParent* parent, int value);
-bool insertValueLeaf(BTreeLeaf* leaf, int value);
+bool insertValueParent(BTreeParent* parent, int value, int index);
+bool insertValueLeaf(BTreeLeaf* leaf, int value, int index);
 
 // returns false if this node is completely full
-bool insertValueParent(BTreeParent* parent, int value) {
+bool insertValueParent(BTreeParent* parent, int value, int index) {
     // find appropriate child node for this value
     int i;
     for (i = 0; i < (int) parent->num_children - 1; i++)
@@ -41,12 +42,12 @@ bool insertValueParent(BTreeParent* parent, int value) {
     // attempt to insert into child node
     switch (parent->children[i]->type) {
         case PARENT:
-            if (insertValueParent(&(parent->children[i]->object.parent), value) == true)
+            if (insertValueParent(&(parent->children[i]->object.parent), value, index) == true)
                 return true;
             else
                 break;
         case LEAF:
-            if (insertValueLeaf(&(parent->children[i]->object.leaf), value) == true)
+            if (insertValueLeaf(&(parent->children[i]->object.leaf), value, index) == true)
                 return true;
             else
                 break;
@@ -105,7 +106,7 @@ bool insertValueParent(BTreeParent* parent, int value) {
                 parent->num_children++;
 
                 // retry inserting value in this parent
-                return insertValueParent(parent, value);
+                return insertValueParent(parent, value, index);
                 break;
             case LEAF:
                 // insert a new leaf node after ith one
@@ -116,8 +117,12 @@ bool insertValueParent(BTreeParent* parent, int value) {
                 // copy objects to new node
                 node1 = parent->children[i];
                 node2 = parent->children[i+1];
-                for (int j = CAPACITY; j < 2 * CAPACITY; j++)
+                for (int j = CAPACITY; j < 2 * CAPACITY; j++) {
                     node2->object.leaf.values[j - CAPACITY] = node1->object.leaf.values[j];
+                    node2->object.leaf.indexes[j - CAPACITY] = node1->object.leaf.indexes[j];
+                    node1->object.leaf.values[j] = 0;
+                    node1->object.leaf.indexes[j] = 0;
+                }
                 
                 // fix number of values
                 node1->object.leaf.num_elements = CAPACITY;
@@ -138,7 +143,7 @@ bool insertValueParent(BTreeParent* parent, int value) {
                 parent->num_children++;
 
                 // retry inserting value in this parent
-                return insertValueParent(parent, value);
+                return insertValueParent(parent, value, index);
                 break;
         }
     } else {
@@ -149,7 +154,7 @@ bool insertValueParent(BTreeParent* parent, int value) {
     return true;
 }
 // returns false if this node is completely full
-bool insertValueLeaf(BTreeLeaf* leaf, int value) {
+bool insertValueLeaf(BTreeLeaf* leaf, int value, int index) {
     // check for full leaf node
     if (leaf->num_elements == 2 * CAPACITY)
         return false;
@@ -163,18 +168,20 @@ bool insertValueLeaf(BTreeLeaf* leaf, int value) {
     // shift values over
     for (int j = leaf->num_elements - 1; j >= i; j--) {
         leaf->values[j+1] = leaf->values[j];
+        leaf->indexes[j+1] = leaf->indexes[j];
     }
     leaf->values[i] = value;
+    leaf->values[i] = index;
     leaf->num_elements++;
     return true;
 }
 
-void insertValue(BTreeNode** tree, int value) {
+void insertValue(BTreeNode** tree, int value, int index) {
     BTreeNode* root = *tree;
     switch ((*tree)->type) {
         case PARENT:
             // attempt to insert new value; if false, root is full
-            if (insertValueParent(&(root->object.parent), value) == false) {
+            if (insertValueParent(&(root->object.parent), value, index) == false) {
                 // allocate a new root and a new parent
                 BTreeNode* new_root = malloc(sizeof(BTreeNode));
                 BTreeNode* new_parent = malloc(sizeof(BTreeNode));
@@ -211,12 +218,12 @@ void insertValue(BTreeNode** tree, int value) {
 
                 // save new root node and re-insert
                 *tree = new_root;
-                insertValue(tree, value);
+                insertValue(tree, value, index);
             }
             break;
         case LEAF:
             // attempt to insert new value; if false, root is full
-            if (insertValueLeaf(&(root->object.leaf), value) == false) {
+            if (insertValueLeaf(&(root->object.leaf), value, index) == false) {
                 // allocate a new root and a new leaf
                 BTreeNode* new_root = malloc(sizeof(BTreeNode));
                 BTreeNode* new_leaf = malloc(sizeof(BTreeNode));
@@ -232,7 +239,9 @@ void insertValue(BTreeNode** tree, int value) {
                 // copy values from old leaf to new leaf
                 for (int j = CAPACITY; j < 2 * CAPACITY; j++) {
                     new_leaf->object.leaf.values[j - CAPACITY] = old_leaf->object.leaf.values[j];
+                    new_leaf->object.leaf.indexes[j - CAPACITY] = old_leaf->object.leaf.indexes[j];
                     old_leaf->object.leaf.values[j] = 0;
+                    old_leaf->object.leaf.indexes[j] = 0;
                 }
                 // fix number of children
                 new_root->object.parent.num_children = 2;
@@ -248,14 +257,14 @@ void insertValue(BTreeNode** tree, int value) {
 
                 // save new root node and re-insert
                 *tree = new_root;
-                insertValue(tree, value);
+                insertValue(tree, value, index);
             }
             break;
     }
 }
 
-void deleteValue(BTreeNode** tree, int value);
-void updateValue(BTreeNode** tree, int value, int new_value);
+void deleteValue(BTreeNode** tree, int value, int index);
+void updateValue(BTreeNode** tree, int value, int index, int new_value);
 
 void printTreeHelper(BTreeNode* tree, char* prefix) {
     switch (tree->type) {
