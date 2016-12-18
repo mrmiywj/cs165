@@ -33,8 +33,8 @@ bool insertValueLeaf(BTreeLeaf* leaf, int value);
 // returns false if this node is completely full
 bool insertValueParent(BTreeParent* parent, int value) {
     // find appropriate child node for this value
-    size_t i;
-    for (i = 0; i < parent->num_children - 1; i++)
+    int i;
+    for (i = 0; i < (int) parent->num_children - 1; i++)
         if (parent->dividers[i] > value)
             break;
     
@@ -55,7 +55,7 @@ bool insertValueParent(BTreeParent* parent, int value) {
     // fall-through; subchild is completely full, need to break into two children
     if (parent->num_children < 2 * CAPACITY) {
         // there's space to add another child, insert at i+1
-        for (size_t j = parent->num_children - 1; j > i; j--) {
+        for (int j = parent->num_children - 1; j > i; j--) {
             parent->children[j+1] = parent->children[j];
             parent->dividers[j] = parent->dividers[j-1];
         }
@@ -98,7 +98,7 @@ bool insertValueParent(BTreeParent* parent, int value) {
                 
                 // bubble up new divider to parent
                 new_divider = node2->object.parent.dividers[0];
-                for (size_t j = i; j < parent->num_children - 1; j++) {
+                for (int j = parent->num_children - 2; j >= i; j--) {
                     parent->dividers[i+1] = parent->dividers[i];
                 }
                 parent->dividers[i] = new_divider;
@@ -131,7 +131,7 @@ bool insertValueParent(BTreeParent* parent, int value) {
                 
                 // bubble up new divider to parent
                 new_divider = node2->object.leaf.values[0];
-                for (size_t j = i; j < parent->num_children - 1; j++) {
+                for (int j = parent->num_children - 2; j >= i; j--) {
                     parent->dividers[i+1] = parent->dividers[i];
                 }
                 parent->dividers[i] = new_divider;
@@ -139,11 +139,14 @@ bool insertValueParent(BTreeParent* parent, int value) {
 
                 // retry inserting value in this parent
                 return insertValueParent(parent, value);
+                break;
         }
     } else {
         // this parent has the max number of children
         return false;
     }
+
+    return true;
 }
 // returns false if this node is completely full
 bool insertValueLeaf(BTreeLeaf* leaf, int value) {
@@ -152,13 +155,13 @@ bool insertValueLeaf(BTreeLeaf* leaf, int value) {
         return false;
     
     // else, insert new value
-    size_t i;
-    for (i = 0; i < leaf->num_elements; i++)
+    int i;
+    for (i = 0; i < (int) leaf->num_elements; i++)
         if (leaf->values[i] >= value)
             break;
     
     // shift values over
-    for (size_t j = i; j < leaf->num_elements; j++) {
+    for (int j = leaf->num_elements - 1; j >= i; j--) {
         leaf->values[j+1] = leaf->values[j];
     }
     leaf->values[i] = value;

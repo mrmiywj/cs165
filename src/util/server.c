@@ -168,10 +168,10 @@ int setup_server() {
 int main(void) {
     // test stuff here
     BTreeNode* node = createBTree();
-    for (int i = 0; i < 10000; i++) {
-        insertValue(&node, i);
+    for (int i = 100; i > 0; i--) {
+        insertValue(&node, rand() % 10);
     }
-    // printTree(node);
+    printTree(node);
     traverse(node);
 
     signal(SIGPIPE, SIG_IGN);    
