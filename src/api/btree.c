@@ -492,6 +492,9 @@ int insertValueParentC(BTreeCParent* parent, int value) {
         // this parent has the max number of children
         return -1;
     }
+    // should never reach this point
+    log_info("CRITICAL ERROR: REACHED IMPOSSIBLE LINE AT %i in %i\n", __LINE__, __func__);
+    return -1;
 }
 // returns int if this node is completely full
 int insertValueLeafC(BTreeCLeaf* leaf, int value) {
@@ -608,6 +611,9 @@ size_t insertValueC(BTreeCNode** tree, int value) {
             }
         }
     }
+    // should never reach this point
+    log_info("CRITICAL ERROR: REACHED IMPOSSIBLE LINE AT %i in %i\n", __LINE__, __func__);
+    return 0;
 }
 
 void deleteValueC(BTreeCNode** tree, int value, int index);
