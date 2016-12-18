@@ -27,10 +27,10 @@ typedef enum IndexType {
     BTREE,
     SORTED
 } IndexType;
-typedef enum IndexSortType {
+typedef enum IndexSort {
     CLUSTERED,
     UNCLUSTERED
-} IndexSortType;
+} IndexSort;
 typedef union IndexObject {
     Column* column;
     struct BTreeNode* btree;
@@ -38,6 +38,7 @@ typedef union IndexObject {
 typedef struct Index {
     IndexObject object;
     IndexType type;
+    IndexSort sort;
     bool clustered;
 } Index;
 typedef struct Table {
