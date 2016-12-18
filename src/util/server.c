@@ -167,8 +167,8 @@ int setup_server() {
 
 int main(void) {
     // BTreeCNode* node = createBTreeC();
-    // for (int i = 100; i > 0; i--) {
-    //     insertValueC(&node, rand() % 100);
+    // for (int i = 0; i < 1000; i++) {
+    //     printf("Inserting value %i gave index: %i\n", i, insertValueC(&node, i));
     // }
     // printTreeC(node);
     // traverseC(node);

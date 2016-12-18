@@ -514,7 +514,7 @@ int insertValueLeafC(BTreeCLeaf* leaf, int value) {
     leaf->indexes[i] = i > 0 ? leaf->indexes[i - 1] + 1 : leaf->indexes[i + 1];
     leaf->num_elements++;
     shift(leaf, i + 1, 1);
-    return true;
+    return leaf->indexes[i];
 }
 
 size_t insertValueC(BTreeCNode** tree, int value) {
