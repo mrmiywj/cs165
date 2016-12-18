@@ -167,14 +167,14 @@ int setup_server() {
 
 int main(void) {
     // test stuff here
-    BTreeNode* node = createBTree();
-    for (int i = 100; i > 0; i--) {
-        insertValue(&node, rand() % 10);
-    }
-    printTree(node);
-    traverse(node);
+    // BTreeNode* node = createBTree();
+    // for (int i = 100; i > 0; i--) {
+    //     insertValue(&node, rand() % 10);
+    // }
+    // printTree(node);
+    // traverse(node);
 
-    signal(SIGPIPE, SIG_IGN);    
+    signal(SIGPIPE, SIG_IGN);
 
     // set up socket
     int server_socket = setup_server();

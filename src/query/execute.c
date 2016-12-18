@@ -754,58 +754,73 @@ char* handleMathQuery(DbOperator* query, message* send_message) {
             payload = column->data;
         }
 
-        double result = 0;
-        switch (math.type) {
-            case AVG: {
-                for (size_t i = 0; i < num_tuples; i++) {
-                    result += payload[i];
-                }
-                result /= num_tuples;
-                break;
-            }
-            case SUM: {
-                for (size_t i = 0; i < num_tuples; i++) {
-                    result += payload[i];
-                }
-                break;
-            }
-            case MIN: {
-                result = payload[0];
-                for (size_t i = 1; i < num_tuples; i++) {
-                    if (payload[i] < result) {
-                        result = payload[i];
-                    }
-                }
-                break;
-            }
-            case MAX: {
-                result = payload[0];
-                for (size_t i = 1; i < num_tuples; i++) {
-                    if (payload[i] > result) {
-                        result = payload[i];
-                    }
-                }
-                break;
-            }
-            default:
-                break;
-        }
-        double* toSave = malloc(sizeof(double));
-        toSave[0] = result;
-
         // create a new GeneralizedColumnHandle
         GeneralizedColumnHandle new_handle;
         GeneralizedColumnPointer new_pointer;
         new_pointer.result = malloc(sizeof(Result));
-        new_pointer.result->data_type = DOUBLE;
         new_pointer.result->num_tuples = 1;
-        new_pointer.result->payload = (void*) toSave;
         GeneralizedColumn gen_column = {
             .column_type = RESULT,
             .column_pointer = new_pointer
         };
         new_handle.generalized_column = gen_column;
         strcpy(new_handle.name, handle);
+
+        // calculate values to store
+        switch (math.type) {
+            case AVG: {
+                double result = 0;
+                for (size_t i = 0; i < num_tuples; i++) {
+                    result += payload[i];
+                }
+                result /= num_tuples;
+                
+                double* toSave = malloc(sizeof(double));
+                toSave[0] = result;
+                new_pointer.result->data_type = DOUBLE;
+                new_pointer.result->payload = (void*) toSave;
+                break;
+            }
+            case SUM: {
+                int result = 0;
+                for (size_t i = 0; i < num_tuples; i++) {
+                    result += payload[i];
+                }
+                int* toSave = malloc(sizeof(double));
+                toSave[0] = result;
+                new_pointer.result->data_type = INT;
+                new_pointer.result->payload = (void*) toSave;
+                break;
+            }
+            case MIN: {
+                int result = payload[0];
+                for (size_t i = 1; i < num_tuples; i++) {
+                    if (payload[i] < result) {
+                        result = payload[i];
+                    }
+                }
+                int* toSave = malloc(sizeof(double));
+                toSave[0] = result;
+                new_pointer.result->data_type = INT;
+                new_pointer.result->payload = (void*) toSave;
+                break;
+            }
+            case MAX: {
+                int result = payload[0];
+                for (size_t i = 1; i < num_tuples; i++) {
+                    if (payload[i] > result) {
+                        result = payload[i];
+                    }
+                }
+                int* toSave = malloc(sizeof(double));
+                toSave[0] = result;
+                new_pointer.result->data_type = INT;
+                new_pointer.result->payload = (void*) toSave;
+                break;
+            }
+            default:
+                break;
+        }
 
         // search for context and add to the list of variables
         if (checkContextSize(context) != true) {
