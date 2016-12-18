@@ -9,6 +9,7 @@ void printDbOperator(DbOperator* query);
 void printDatabase(Db* db);
 void printTable(Table* tbl, char* prefix);
 void printColumn(Column* col, char* prefix, size_t nvals);
+void printIndex(Index* index, char* prefix);
 void printContext(ClientContext* context);
 
 #endif

@@ -150,6 +150,9 @@ void printTable(Table* tbl, char* prefix) {
         log_info("%sColumn %i at %p:\n", prefix, i, tbl->columns[i]);
         printColumn(tbl->columns[i], next_prefix, tbl->num_rows);
     }
+    for (size_t i = 0; i < tbl->num_indexes; i++) {
+        printIndex(tbl->indexes[i], next_prefix);
+    }
 }
 
 /* Prints a description of a Column object. */
@@ -163,6 +166,23 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
         log_info("%i ", col->data[i]);
     }
     log_info("]\n");
+}
+
+/* Prints a description of an Index object. */
+void printIndex(Index* index, char* prefix) {
+    log_info("%sIndex of type %i, clustered: %i on column %s\n", prefix, index->type, index->clustered, index->column->name);
+    switch (index->type) {
+        case BTREE:
+            if (index->clustered) {
+                printTreeC(index->object->btreec, prefix);
+            } else {
+                printTreeU(index->object->btreeu, prefix);
+            }
+            break;
+        case SORTED:
+            if (!index->clustered)
+                log_info("%s    Column has indices stored at %p\n", index->object->indexes);
+    }
 }
 
 /* Prints a description of a ClientContext object. */

@@ -200,7 +200,7 @@ DbOperator* parse_create_idx(char* arguments, message* response) {
     // check for # of arguments
     if (response->status == INCORRECT_FORMAT)
         return NULL;
-    if (arguments_index != NULL) {
+    if (*arguments_index != NULL) {
         response->status = INCORRECT_FORMAT;
         return NULL;
     }
@@ -241,7 +241,7 @@ DbOperator* parse_create_idx(char* arguments, message* response) {
     result->fields.create = (CreateOperator) {
         .type = CREATE_IDX, 
         .params = params,
-        .num_params = 3
+        .num_params = 5
     };
     return result;
 }

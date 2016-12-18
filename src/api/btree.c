@@ -272,7 +272,7 @@ void insertValueU(BTreeUNode** tree, int value, int index) {
 void deleteValueU(BTreeUNode** tree, int value, int index);
 void updateValueU(BTreeUNode** tree, int value, int index, int new_value);
 
-void printTreeUHelper(BTreeUNode* tree, char* prefix) {
+void printTreeU(BTreeUNode* tree, char* prefix) {
     switch (tree->type) {
         case PARENT: {
             log_info("%sPARENT (%p) has %i children\n", prefix, tree, tree->object.parent.num_children);
@@ -287,7 +287,7 @@ void printTreeUHelper(BTreeUNode* tree, char* prefix) {
             }
             new_prefix[strlen(prefix) + 4] = '\0';
             for (size_t i = 0; i < tree->object.parent.num_children; i++) {
-                printTreeUHelper(tree->object.parent.children[i], new_prefix);
+                printTreeU(tree->object.parent.children[i], new_prefix);
             }
             break;
         }
@@ -301,9 +301,6 @@ void printTreeUHelper(BTreeUNode* tree, char* prefix) {
             break;
         }
     }
-}
-void printTreeU(BTreeUNode* tree) {
-    printTreeUHelper(tree, "");
 }
 
 void traverseU(BTreeUNode* tree) {
@@ -619,7 +616,7 @@ size_t insertValueC(BTreeCNode** tree, int value) {
 void deleteValueC(BTreeCNode** tree, int value, int index);
 size_t updateValueC(BTreeCNode** tree, int value, int index, int new_value);
 
-void printTreeCHelper(BTreeCNode* tree, char* prefix) {
+void printTreeC(BTreeCNode* tree, char* prefix) {
     switch (tree->type) {
         case PARENT: {
             log_info("%sPARENT (%p) has %i children\n", prefix, tree, tree->object.parent.num_children);
@@ -634,7 +631,7 @@ void printTreeCHelper(BTreeCNode* tree, char* prefix) {
             }
             new_prefix[strlen(prefix) + 4] = '\0';
             for (size_t i = 0; i < tree->object.parent.num_children; i++) {
-                printTreeCHelper(tree->object.parent.children[i], new_prefix);
+                printTreeC(tree->object.parent.children[i], new_prefix);
             }
             break;
         }
@@ -648,9 +645,6 @@ void printTreeCHelper(BTreeCNode* tree, char* prefix) {
             break;
         }
     }
-}
-void printTreeC(BTreeCNode* tree) {
-    printTreeCHelper(tree, "");
 }
 
 void traverseC(BTreeCNode* tree) {

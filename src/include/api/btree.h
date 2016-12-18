@@ -40,7 +40,7 @@ BTreeUNode* createBTreeU();
 void insertValueU(BTreeUNode** tree, int value, int index);
 void deleteValueU(BTreeUNode** tree, int value, int index);
 void updateValueU(BTreeUNode** tree, int value, int index, int new_value);
-void printTreeU(BTreeUNode* tree);
+void printTreeU(BTreeUNode* tree, char* prefix);
 void traverseU(BTreeUNode* tree);
 
 // clustered btree structs
@@ -75,7 +75,7 @@ size_t insertValueC(BTreeCNode** tree, int value);
 void deleteValueC(BTreeCNode** tree, int value, int index);
 // updates an element at a specific index and returns the new index
 size_t updateValueC(BTreeCNode** tree, int value, int index, int new_value);
-void printTreeC(BTreeCNode* tree);
+void printTreeC(BTreeCNode* tree, char* prefix);
 void traverseC(BTreeCNode* tree);
 
 #endif

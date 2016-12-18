@@ -78,190 +78,229 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
     
     OperatorFields fields = query->fields;
     switch (fields.create.type) {
-    case CREATE_DB:
-        // check for params
-        if (fields.create.num_params != 1) {
-            send_message->status = INCORRECT_FORMAT;
-            return "-- Incorrect number of arguments when creating db.";
-        }
-
-        // extract params and validate
-        db_name = fields.create.params[0];
-        if (current_db != NULL && strcmp(current_db->name, db_name) == 0) {
-            send_message->status = EXECUTION_ERROR;
-            return "-- Error creating db.";
-        }
-
-        // create the actual database directory
-        if (createDatabase(db_name) != 0) {
-            send_message->status = EXECUTION_ERROR;
-            return "-- Error creating db.";   
-        }
-
-        // destroy current db and replace with new db object
-        freeDb(current_db);
-        current_db = malloc(sizeof(Db));
-        strcpy(current_db->name, db_name);
-        current_db->tables = NULL;
-        current_db->num_tables = 0;
-        current_db->tables_capacity = 0;
-
-        // finished successfully
-        send_message->status = OK_DONE;
-        return "-- Successfully created db.";
-    
-    case CREATE_TBL:
-        log_info("Creating table...\n");
-        // check for params
-        if (fields.create.num_params != 3) {
-            send_message->status = INCORRECT_FORMAT;
-            return "-- Incorrect number of arguments when creating table.";
-        }
-
-        // extract params and validate
-        db_name = fields.create.params[0];
-        tbl_name = fields.create.params[1];
-        int column_count = atoi(fields.create.params[2]);
-        if (column_count <= 0) {
-            send_message->status = INCORRECT_FORMAT;
-            return "-- At least one column required.";
-        }
-
-        // create the table directory
-        if (createTable(db_name, tbl_name) != 0) {
-            send_message->status = EXECUTION_ERROR;
-            return "-- Error creating table.";
-        }
-
-        // update the db index
-        if (current_db->tables == NULL) {
-            current_db->tables = calloc(1, sizeof(Table*));
-        } else {
-            size_t new_num = current_db->num_tables + 1;
-            Table** new_tables = realloc(current_db->tables, new_num * sizeof(Table*));
-            if (new_tables == NULL) {
-                send_message->status = EXECUTION_ERROR;
-                return "-- Unable to create new table.";
+        case CREATE_DB: {
+            // check for params
+            if (fields.create.num_params != 1) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- Incorrect number of arguments when creating db.";
             }
-            current_db->tables = new_tables;
-        }
-        Table* new_table = malloc(sizeof(Table));
-        strcpy(new_table->name, tbl_name);
-        new_table->columns = NULL;
-        new_table->indexes = NULL;
-        new_table->col_count = 0;
-        new_table->num_rows = 0;
-        new_table->capacity = 0;
-        current_db->tables[current_db->num_tables++] = new_table;
 
-        // finished successfully
-        send_message->status = OK_DONE;
-        return "-- Successfully created table.";
-    
-    case CREATE_COL:
-        // check for params
-        if (fields.create.num_params != 3) {
-            send_message->status = INCORRECT_FORMAT;
-            return "-- Incorrect number of arguments when creating column.";
-        }
-        
-        // extract params and validate
-        db_name = fields.create.params[0];
-        tbl_name = fields.create.params[1];
-        col_name = fields.create.params[2];
-        if (strcmp(current_db->name, db_name) != 0) {
-            send_message->status = QUERY_UNSUPPORTED;
-            return "-- Cannot create index in inactive db.";
-        }
-
-        // create a column file
-        if (createColumn(db_name, tbl_name, col_name) != 0) {
-            send_message->status = EXECUTION_ERROR;
-            return "-- Error creating column.";
-        }
-
-        // if we didn't manage to find a table
-        Table* table = findTable(tbl_name);
-        if (table == NULL) {
-            send_message->status = INCORRECT_FORMAT;
-            return "-- Unable to find specified table.";
-        } 
-        
-        // found the correct table, insert new column
-        if (table->columns == NULL) {
-            table->columns = calloc(1, sizeof(Column*));
-        } else {
-            size_t new_num = table->col_count + 1;
-            Column** new_cols = realloc(table->columns, new_num * sizeof(Column*)); 
-            if (new_cols == NULL) {
+            // extract params and validate
+            db_name = fields.create.params[0];
+            if (current_db != NULL && strcmp(current_db->name, db_name) == 0) {
                 send_message->status = EXECUTION_ERROR;
-                return "-- Unable to create new column.";
+                return "-- Error creating db.";
             }
-            table->columns = new_cols;
+
+            // create the actual database directory
+            if (createDatabase(db_name) != 0) {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Error creating db.";   
+            }
+
+            // destroy current db and replace with new db object
+            freeDb(current_db);
+            current_db = malloc(sizeof(Db));
+            strcpy(current_db->name, db_name);
+            current_db->tables = NULL;
+            current_db->num_tables = 0;
+            current_db->tables_capacity = 0;
+
+            // finished successfully
+            send_message->status = OK_DONE;
+            return "-- Successfully created db.";
         }
-        Column* new_col = malloc(sizeof(Column));
-        strcpy(new_col->name, col_name);
-        new_col->data = NULL;
-        table->columns[table->col_count] = new_col;
-        table->col_count++;
+        case CREATE_TBL: {
+            log_info("Creating table...\n");
+            // check for params
+            if (fields.create.num_params != 3) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- Incorrect number of arguments when creating table.";
+            }
 
-        // finished successfully
-        send_message->status = OK_DONE;
-        return "-- Successfully created column.";
-    
-    case CREATE_IDX:
-        // check for params
-        if (fields.create.num_params != 5) {
-            send_message->status = INCORRECT_FORMAT;
-            return "-- Incorrect number of arguments when creating index.";
+            // extract params and validate
+            db_name = fields.create.params[0];
+            tbl_name = fields.create.params[1];
+            int column_count = atoi(fields.create.params[2]);
+            if (column_count <= 0) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- At least one column required.";
+            }
+
+            // check to make sure table doesn't already existence
+            Table* existing_table = findTable(tbl_name);
+            if (existing_table != NULL) {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Table already exists.";
+            }
+
+            // create the table directory
+            if (createTable(db_name, tbl_name) != 0) {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Error creating table.";
+            }
+
+            // update the db index
+            if (current_db->tables == NULL) {
+                current_db->tables = calloc(1, sizeof(Table*));
+            } else {
+                size_t new_num = current_db->num_tables + 1;
+                Table** new_tables = realloc(current_db->tables, new_num * sizeof(Table*));
+                if (new_tables == NULL) {
+                    send_message->status = EXECUTION_ERROR;
+                    return "-- Unable to create new table.";
+                }
+                current_db->tables = new_tables;
+            }
+            Table* new_table = malloc(sizeof(Table));
+            strcpy(new_table->name, tbl_name);
+            new_table->columns = NULL;
+            new_table->indexes = NULL;
+            new_table->col_count = 0;
+            new_table->num_rows = 0;
+            new_table->capacity = 0;
+            new_table->num_indexes = 0;
+            current_db->tables[current_db->num_tables++] = new_table;
+
+            // finished successfully
+            send_message->status = OK_DONE;
+            return "-- Successfully created table.";
         }
-        
-        // extract params and validate
-        db_name = fields.create.params[0];
-        tbl_name = fields.create.params[1];
-        col_name = fields.create.params[2];
-        // if (strcmp(current_db->name, db_name) != 0) {
-        //     send_message->status = QUERY_UNSUPPORTED;
-        //     return "-- Cannot create column in inactive db.";
-        // }
+        case CREATE_COL: {
+            // check for params
+            if (fields.create.num_params != 3) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- Incorrect number of arguments when creating column.";
+            }
+            
+            // extract params and validate
+            db_name = fields.create.params[0];
+            tbl_name = fields.create.params[1];
+            col_name = fields.create.params[2];
+            if (strcmp(current_db->name, db_name) != 0) {
+                send_message->status = QUERY_UNSUPPORTED;
+                return "-- Cannot create index in inactive db.";
+            }
 
-        // // create a column file
-        // if (createColumn(db_name, tbl_name, col_name) != 0) {
-        //     send_message->status = EXECUTION_ERROR;
-        //     return "-- Error creating column.";
-        // }
+            // if we didn't manage to find a table
+            Table* table = findTable(tbl_name);
+            if (table == NULL) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- Unable to find specified table.";
+            } 
 
-        // // if we didn't manage to find a table
-        // Table* table = findTable(tbl_name);
-        // if (table == NULL) {
-        //     send_message->status = INCORRECT_FORMAT;
-        //     return "-- Unable to find specified table.";
-        // } 
-        
-        // // found the correct table, insert new column
-        // if (table->columns == NULL) {
-        //     table->columns = calloc(1, sizeof(Column*));
-        // } else {
-        //     size_t new_num = table->col_count + 1;
-        //     Column** new_cols = realloc(table->columns, new_num * sizeof(Column*)); 
-        //     if (new_cols == NULL) {
-        //         send_message->status = EXECUTION_ERROR;
-        //         return "-- Unable to create new column.";
-        //     }
-        //     table->columns = new_cols;
-        // }
-        // Column* new_col = malloc(sizeof(Column));
-        // strcpy(new_col->name, col_name);
-        // new_col->data = NULL;
-        // table->columns[table->col_count] = new_col;
-        // table->col_count++;
+            // check to make sure column doesn't already exist
+            Column* existing_column = findColumn(table, col_name);
+            if (existing_column != NULL) {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Column already exists.";
+            }
 
-        // // finished successfully
-        // send_message->status = OK_DONE;
-        // return "-- Successfully created column.";
-    
-    default:
-        break;
+            // create a column file
+            if (createColumn(db_name, tbl_name, col_name) != 0) {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Error creating column.";
+            }
+
+            // found the correct table, insert new column
+            if (table->columns == NULL) {
+                table->columns = calloc(1, sizeof(Column*));
+            } else {
+                size_t new_num = table->col_count + 1;
+                Column** new_cols = realloc(table->columns, new_num * sizeof(Column*)); 
+                if (new_cols == NULL) {
+                    send_message->status = EXECUTION_ERROR;
+                    return "-- Unable to create new column.";
+                }
+                table->columns = new_cols;
+            }
+            Column* new_col = malloc(sizeof(Column));
+            strcpy(new_col->name, col_name);
+            new_col->data = NULL;
+            table->columns[table->col_count] = new_col;
+            table->col_count++;
+
+            // finished successfully
+            send_message->status = OK_DONE;
+            return "-- Successfully created column.";
+        }
+        case CREATE_IDX: {
+            // check for params
+            if (fields.create.num_params != 5) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- Incorrect number of arguments when creating index.";
+            }
+            
+            // extract params and validate
+            db_name = fields.create.params[0];
+            tbl_name = fields.create.params[1];
+            col_name = fields.create.params[2];
+            
+            if (strcmp(current_db->name, db_name) != 0) {
+                send_message->status = QUERY_UNSUPPORTED;
+                return "-- Cannot create index in inactive db.";
+            }
+
+            // if we didn't manage to find a table
+            Table* table = findTable(tbl_name);
+            if (table == NULL) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- Unable to find specified table.";
+            } 
+            
+            // search for column to ensure existence
+            Column* column = findColumn(table, col_name);
+            if (column == NULL) {
+                send_message->status = INCORRECT_FORMAT;
+                return "-- Unable to find specified column.";
+            }
+
+            // resize table indexes array if necessary
+            if (table->num_indexes == 0)
+                table->indexes = malloc(sizeof(Index*) * 2);
+            if (table->num_indexes > 2 && table->num_indexes % 2 == 0) {
+                Index** new_list = realloc(table->indexes, sizeof(Index*) * (2 + table->num_indexes));
+                if (new_list != NULL) {
+                    table->indexes = new_list;
+                } else {
+                    send_message->status = EXECUTION_ERROR;
+                    return "-- Unable to insert a new index; no space in table.";
+                }
+            }
+            
+            // create an index object and insert into table now
+            Index* new_index = malloc(sizeof(Index));
+            new_index->column = column;
+            new_index->type = strcmp("btree", fields.create.params[3]) == 0 ? BTREE : SORTED;
+            new_index->clustered = (strcmp("clustered", fields.create.params[4]) == 0);
+            switch (new_index->type) {
+                case BTREE:
+                    new_index->object = malloc(sizeof(IndexObject));
+                    if (new_index->clustered) {
+                        new_index->object->btreec = createBTreeC();
+                        for (size_t i = 0; i < table->num_rows; i++) {
+                            insertValueC(&(new_index->object->btreec), column->data[i]);
+                        }
+                    } else {
+                        new_index->object->btreeu = createBTreeU();
+                        for (size_t i = 0; i < table->num_rows; i++) {
+                            insertValueU(&(new_index->object->btreeu), column->data[i], i);
+                        }
+                    }
+                    break;
+                case SORTED:
+                    new_index->column = column;
+                    new_index->object = NULL;
+                    break;
+            }
+            table->indexes[table->num_indexes++] = new_index;
+            
+            // finished successfully
+            send_message->status = OK_DONE;
+            return "-- Successfully created index.";
+        }
+        default:
+            break;
     }
     return "Not implemented yet.";
 }
