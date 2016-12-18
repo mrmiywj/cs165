@@ -18,6 +18,7 @@
 #include "util/message.h"
 #include "util/log.h"
 #include "util/debug.h"
+#include "api/btree.h"
 
 #define DEFAULT_QUERY_BUFFER_SIZE 1024
 
@@ -165,6 +166,13 @@ int setup_server() {
 }
 
 int main(void) {
+    // test stuff here
+    // BTreeNode* node = createBTree();
+    // for (int i = 0; i < 10000; i++) {
+    //     insertValue(&node, i);
+    // }
+    // printTree(node);
+
     signal(SIGPIPE, SIG_IGN);    
 
     // set up socket

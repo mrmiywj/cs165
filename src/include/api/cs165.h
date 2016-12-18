@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <btree.h>
+#include "api/btree.h"
 
 // Limits the size of a name in our database to 64 characters
 #define MAX_SIZE_NAME 64
@@ -29,7 +29,7 @@ typedef enum IndexType {
 } IndexType;
 typedef union IndexObject {
     Column* column;
-    BTree* btree;
+    struct BTreeNode* btree;
 } IndexObject;
 typedef struct Index {
     IndexObject object;
