@@ -209,9 +209,6 @@ void insertValue(BTreeNode** tree, int value) {
                 // save new root node and re-insert
                 *tree = new_root;
                 insertValue(tree, value);
-            } else {
-                // successfully inserted a new value
-                log_info("Successfully inserted value %i into tree at %p\n", value, *tree);
             }
             break;
         case LEAF:
@@ -249,9 +246,6 @@ void insertValue(BTreeNode** tree, int value) {
                 // save new root node and re-insert
                 *tree = new_root;
                 insertValue(tree, value);
-            } else {
-                // successfully inserted a new value
-                log_info("Successfully inserted value %i into tree at %p\n", value, *tree);
             }
             break;
     }
@@ -292,4 +286,18 @@ void printTreeHelper(BTreeNode* tree, char* prefix) {
 }
 void printTree(BTreeNode* tree) {
     printTreeHelper(tree, "");
+}
+
+void traverse(BTreeNode* tree) {
+    BTreeNode* ptr = tree;
+    while (ptr->type != LEAF) {
+        ptr = ptr->object.parent.children[0];
+    }
+    BTreeLeaf* leaf = &(ptr->object.leaf);
+    while (leaf != NULL) {
+        for (size_t i = 0; i < leaf->num_elements; i++) {
+            printf("%i\n", leaf->values[i]);
+        }
+        leaf = leaf->next;
+    }
 }

@@ -167,11 +167,12 @@ int setup_server() {
 
 int main(void) {
     // test stuff here
-    // BTreeNode* node = createBTree();
-    // for (int i = 0; i < 10000; i++) {
-    //     insertValue(&node, i);
-    // }
+    BTreeNode* node = createBTree();
+    for (int i = 0; i < 10000; i++) {
+        insertValue(&node, i);
+    }
     // printTree(node);
+    traverse(node);
 
     signal(SIGPIPE, SIG_IGN);    
 

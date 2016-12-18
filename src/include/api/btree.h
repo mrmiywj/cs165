@@ -37,5 +37,6 @@ void insertValue(BTreeNode** tree, int value);
 void deleteValue(BTreeNode** tree, int value);
 void updateValue(BTreeNode** tree, int value, int new_value);
 void printTree(BTreeNode* tree);
+void traverse(BTreeNode* tree);
 
 #endif
