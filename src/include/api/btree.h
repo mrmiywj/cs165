@@ -42,6 +42,8 @@ void deleteValueU(BTreeUNode** tree, int value, int index);
 void updateValueU(BTreeUNode** tree, int value, int index, int new_value);
 void printTreeU(BTreeUNode* tree, char* prefix);
 void traverseU(BTreeUNode* tree);
+// returns the number of values found
+int findRangeU(int** data, BTreeUNode* tree, int min, int max);
 
 // clustered btree structs
 typedef struct BTreeCParent {
@@ -77,5 +79,7 @@ void deleteValueC(BTreeCNode** tree, int value, int index);
 size_t updateValueC(BTreeCNode** tree, int value, int index, int new_value);
 void printTreeC(BTreeCNode* tree, char* prefix);
 void traverseC(BTreeCNode* tree);
+// returns the number of values found
+int findRangeC(int** data, BTreeCNode* tree, int min, int max);
 
 #endif

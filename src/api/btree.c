@@ -317,6 +317,60 @@ void traverseU(BTreeUNode* tree) {
     }
 }
 
+// returns the number of values found
+int findRangeU(int** data, BTreeUNode* tree, int min, int max) {
+    // find closest leaf
+    BTreeUNode* ptr = tree;
+    while (ptr->type != LEAF) {
+        size_t i;
+        for (i = 0; i < ptr->object.parent.num_children - 1; i++)
+            if (ptr->object.parent.dividers[i] > min)
+                break;
+        ptr = ptr->object.parent.children[i];
+    }
+
+    // iterate horizontally until we retrieve all values
+    int* results = NULL;
+    int num_tuples = 0;
+    int capacity = 0;
+    BTreeULeaf* leaf = &(ptr->object.leaf);
+    while (leaf != NULL) {
+        // iterate over all values in this leaf
+        for (size_t i = 0; i < leaf->num_elements; i++) {
+            // look for values >= min only
+            if (leaf->values[i] < min)
+                continue;
+            // stop iterating if we find a value >= max
+            if (leaf->values[i] >= max) {
+                leaf = NULL;
+                break;
+            }
+            // check if we need to resize
+            if (capacity == num_tuples) {
+                size_t new_size = (capacity == 0) ? 1 : 2 * capacity;
+                if (new_size == 1) {
+                    results = malloc(sizeof(int));
+                } else {
+                    int* new_data = realloc(results, sizeof(int) * new_size);
+                    if (new_data != NULL) {
+                        results = new_data;
+                    } else {
+                        return 0;
+                    }
+                }
+                capacity = new_size;
+            }
+            // save new value
+            results[num_tuples++] = leaf->indexes[i];
+        }
+        // move to next leaf
+        if (leaf != NULL)
+            leaf = leaf->next;
+    }
+    *data = results;
+    return num_tuples;
+}
+
 /*
 ==========================================
 ====== CLUSTERED B+ TREE FUNCTIONS =======
@@ -659,4 +713,58 @@ void traverseC(BTreeCNode* tree) {
         }
         leaf = leaf->next;
     }
+}
+
+// returns the number of values found
+int findRangeC(int** data, BTreeCNode* tree, int min, int max) {
+    // find closest leaf
+    BTreeCNode* ptr = tree;
+    while (ptr->type != LEAF) {
+        size_t i;
+        for (i = 0; i < ptr->object.parent.num_children - 1; i++)
+            if (ptr->object.parent.dividers[i] > min)
+                break;
+        ptr = ptr->object.parent.children[i];
+    }
+
+    // iterate horizontally until we retrieve all values
+    int* results = NULL;
+    int num_tuples = 0;
+    int capacity = 0;
+    BTreeCLeaf* leaf = &(ptr->object.leaf);
+    while (leaf != NULL) {
+        // iterate over all values in this leaf
+        for (size_t i = 0; i < leaf->num_elements; i++) {
+            // look for values >= min only
+            if (leaf->values[i] < min)
+                continue;
+            // stop iterating if we find a value >= max
+            if (leaf->values[i] >= max) {
+                leaf = NULL;
+                break;
+            }
+            // check if we need to resize
+            if (capacity == num_tuples) {
+                size_t new_size = (capacity == 0) ? 1 : 2 * capacity;
+                if (new_size == 1) {
+                    results = malloc(sizeof(int));
+                } else {
+                    int* new_data = realloc(results, sizeof(int) * new_size);
+                    if (new_data != NULL) {
+                        results = new_data;
+                    } else {
+                        return 0;
+                    }
+                }
+                capacity = new_size;
+            }
+            // save new value
+            results[num_tuples++] = leaf->indexes[i];
+        }
+        // move to next leaf
+        if (leaf != NULL)
+            leaf = leaf->next;
+    }
+    *data = results;
+    return num_tuples;
 }

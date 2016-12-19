@@ -36,3 +36,46 @@ void insertIndex(ColumnIndex* column, int value, int index) {
     shiftValues(column->indexes, insert_index, index - 1, 0);
     column->indexes[insert_index] = index;
 }
+
+// returns the number of values selected
+int findRangeS(int** data, ColumnIndex* column, int total_num, int minimum, int maximum) {
+    int capacity = 0;
+    int num_tuples = 0;
+    int* results = NULL;
+
+    // find smallest value >= minimum
+    int low = 0;
+    int high = total_num;
+    while (high > low) {
+        int current = (low + high) / 2;
+        if (column->values[current] < minimum)
+            low = current + 1;
+        else
+            high = current;
+    }
+
+    // low and high now contain the index of the smallest value >= minimum
+    int current = low;
+    while (current < total_num && column->values[current] < maximum) {
+        // check if we need to resize
+        if (capacity == num_tuples) {
+            size_t new_size = (capacity == 0) ? 1 : 2 * capacity;
+            if (new_size == 1) {
+                results = malloc(sizeof(int));
+            } else {
+                int* new_data = realloc(results, sizeof(int) * new_size);
+                if (new_data != NULL) {
+                    results = new_data;
+                } else {
+                    return 0;
+                }
+            }
+            capacity = new_size;
+        }
+        // save new value
+        results[num_tuples++] = column->indexes[current++];
+    }
+
+    *data = results;
+    return num_tuples;
+}

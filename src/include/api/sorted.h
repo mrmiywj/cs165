@@ -15,4 +15,7 @@ int insertSorted(int* data, int value, int total);
 // inserts a value and an index into a ColumnIndex object
 void insertIndex(ColumnIndex* column, int value, int index);
 
+// returns the number of values selected
+int findRangeS(int** data, ColumnIndex* column, int total_num, int minimum, int maximum);
+
 #endif
