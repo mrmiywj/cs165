@@ -216,6 +216,10 @@ int main(void)
         }
         log_info("-- Received client query: %s", read_buffer);
 
+        // ignore comment messages
+        if (strncmp(read_buffer, "--", 2) == 0)
+            continue;
+
         // handle load messages differently from the rest
         if (strncmp(read_buffer, "load", 4) == 0) {
             handleLoadQuery(read_buffer, client_socket);

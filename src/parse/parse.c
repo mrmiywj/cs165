@@ -31,7 +31,6 @@ DbOperator* parse_command(
         return NULL;
     }
 
-    log_info("QUERY: %s\n", query_command);
     send_message->status = OK_WAIT_FOR_RESPONSE;
     query_command = trim_whitespace(query_command);
 

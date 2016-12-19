@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "util/debug.h"
 #include "util/log.h"
 
@@ -151,7 +153,7 @@ void printTable(Table* tbl, char* prefix) {
         printColumn(tbl->columns[i], next_prefix, tbl->num_rows);
     }
     for (size_t i = 0; i < tbl->num_indexes; i++) {
-        printIndex(tbl->indexes[i], next_prefix);
+        printIndex(tbl->indexes[i], prefix);
     }
 }
 
@@ -171,17 +173,25 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
 /* Prints a description of an Index object. */
 void printIndex(Index* index, char* prefix) {
     log_info("%sIndex of type %i, clustered: %i on column %s\n", prefix, index->type, index->clustered, index->column->name);
+    char next_prefix[strlen(prefix) + 5];
+    sprintf(next_prefix, "%s%s", prefix, "    ");
+    next_prefix[strlen(prefix) + 4] = '\0';
     switch (index->type) {
         case BTREE:
             if (index->clustered) {
-                printTreeC(index->object->btreec, prefix);
+                printTreeC(index->object->btreec, next_prefix);
             } else {
-                printTreeU(index->object->btreeu, prefix);
+                printTreeU(index->object->btreeu, next_prefix);
             }
             break;
         case SORTED:
-            if (!index->clustered)
-                log_info("%s    Column has indices stored at %p\n", index->object->indexes);
+            if (!index->clustered) {
+                log_info("%s    Column has values stored at %p\n", prefix, index->object->column->values);
+                log_info("%s    Column has indices stored at %p\n", prefix, index->object->column->indexes);
+            } else {
+                log_info("%s    Column is sorted; examine corresponding column.\n", prefix);
+            }
+            break;
     }
 }
 

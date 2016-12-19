@@ -74,7 +74,7 @@ void handle_client(int client_socket) {
             break;
         }
 
-        log_info("-- Received query from client: %s", recv_message.payload);
+        log_info("-- Received query from client: %s\n", recv_message.payload);
 
         // parse command for content
         send_message.status = OK_DONE;
@@ -114,6 +114,10 @@ void handle_client(int client_socket) {
         
         // print context every call
         printContext(new_context);
+
+        log_info("==============================================================");
+        log_info("==================== DONE WITH THIS QUERY ====================");
+        log_info("==============================================================\n");
     } while (!done);
 
     // shutdown: delete context and write db to file
@@ -184,7 +188,9 @@ int main(void) {
     startupDb();
 
     // wait for a connection
-    log_info("Waiting for a connection %d ...\n", server_socket);
+    log_info("==============================================================");
+    log_info("================= Waiting for client at %d.. =================", server_socket);
+    log_info("==============================================================\n");
 
     struct sockaddr_un remote;
     socklen_t t = sizeof(remote);

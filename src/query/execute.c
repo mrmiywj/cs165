@@ -25,6 +25,29 @@ Column* findColumn(Table* table, char* col_name) {
     return NULL;
 }
 
+void shiftValues(int* data, size_t min, size_t max, int increment) {
+    for (size_t i = max; i >= min && i <= max; i--)
+        data[i + 1] = data[i] + increment;
+}
+
+// inserts a value into a data array; assumes there's enough space
+int insertSorted(int* data, int value, int total) {
+    // binary search for lowest value greater than this value
+    int low = 0;
+    int high = total;
+    while (high > low) {
+        int current = (low + high) / 2;
+        if (data[current] < value)
+            low = current + 1;
+        else
+            high = current;
+    }
+    // low and high now point to the smallest element greater than "value"
+    shiftValues(data, low, total, 0);
+    data[low] = value;
+    return low;
+}
+
 /** execute_DbOperator takes as input the DbOperator and executes the query. **/
 char* executeDbOperator(DbOperator* query, message* send_message) {
     if (query == NULL) {
@@ -111,7 +134,6 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
             return "-- Successfully created db.";
         }
         case CREATE_TBL: {
-            log_info("Creating table...\n");
             // check for params
             if (fields.create.num_params != 3) {
                 send_message->status = INCORRECT_FORMAT;
@@ -312,9 +334,6 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
     }
 
     // retrieve params
-    char* db_name = current_db->name;
-    // TODO: USE DB_NAME SOMEHOW
-    (void) db_name;
     char* tbl_name = query->fields.insert.tbl_name;
     int* values = query->fields.insert.values;
 
@@ -331,34 +350,169 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
         return "-- Mismatched number of values inserted.";
     }
 
-    // found the correct table, insert new row
+    // resize the table if necessary
     size_t num_rows = table->num_rows;
-    for (size_t i = 0; i < table->col_count; i++) {
-        Column* col = table->columns[i];
-        if (num_rows == table->capacity) {
-            log_info("-- Resizing table columns...\n");
-            bool was_empty = false;
-            for (size_t j = 0; j < table->col_count; j++) {
-                Column* curr_col = table->columns[j];
-                if (curr_col->data == NULL) {
-                    curr_col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
-                    was_empty = true;
-                } else {
-                    int* new_data = realloc(curr_col->data, table->capacity * COL_RESIZE_FACTOR * sizeof(int));
-                    if (new_data == NULL) {
-                        send_message->status = EXECUTION_ERROR;
-                        return "-- Unable to insert a new row.";
-                    }
-                    curr_col->data = new_data;
-                }
-            }
-            if (was_empty == true) {
-                table->capacity = COL_INITIAL_SIZE;
+    bool must_resize = num_rows == table->capacity;
+    if (must_resize) {
+        log_info("-- Resizing table columns...\n");
+        bool was_empty = false;
+        for (size_t j = 0; j < table->col_count; j++) {
+            Column* curr_col = table->columns[j];
+            if (curr_col->data == NULL) {
+                curr_col->data = calloc(COL_INITIAL_SIZE, sizeof(int));
+                was_empty = true;
             } else {
-                table->capacity *= COL_RESIZE_FACTOR;
+                int* new_data = realloc(curr_col->data, table->capacity * COL_RESIZE_FACTOR * sizeof(int));
+                if (new_data == NULL) {
+                    send_message->status = EXECUTION_ERROR;
+                    return "-- Unable to insert a new row.";
+                }
+                curr_col->data = new_data;
             }
         }
-        col->data[num_rows] = values[i];
+        if (was_empty == true) {
+            table->capacity = COL_INITIAL_SIZE;
+        } else {
+            table->capacity *= COL_RESIZE_FACTOR;
+        }
+    }
+
+    // check for a clustered index
+    Index* cluster_index = NULL;
+    for (size_t i = 0; i < table->num_indexes; i++)
+        cluster_index = (table->indexes[i]->clustered) ? table->indexes[i] : cluster_index;
+    if (cluster_index != NULL) {
+        // find corresponding column index and value
+        size_t col_index = -1;
+        for (size_t i = 0; i < table->col_count; i++)
+            if (table->columns[i] == cluster_index->column)
+                col_index = i;
+
+        // insert new value and get back corresponding index
+        size_t insert_index;
+        switch (cluster_index->type) {
+            case BTREE:
+                insert_index = insertValueC(&(cluster_index->object->btreec), values[col_index]);
+                break;
+            case SORTED:
+                insert_index = insertSorted(cluster_index->column->data, values[col_index], table->num_rows);
+                break;
+        }
+        
+        // now shift all values in all columns starting from insert_index onwards
+        for (size_t j = 0; j < table->col_count; j++) {
+            shiftValues(table->columns[j]->data, insert_index, table->num_rows, 0);
+            table->columns[j]->data[insert_index] = values[j];
+        }
+
+        // check the other indexes to see if any need adjustment
+        for (size_t j = 0; j < table->num_indexes; j++) {
+            // type should always be unclustered here
+            if (table->indexes[j]->clustered && table->indexes[j] != cluster_index) {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Indexing error; found multiple clustered indices.";
+            }
+            // find corresponding column index
+            size_t col_index;
+            for (size_t i = 0; i < table->col_count; i++)
+                if (table->columns[i] == table->indexes[j]->column)
+                    col_index = i;
+            
+            // insert value appropriately
+            switch (table->indexes[j]->type) {
+                case BTREE:
+                    insertValueU(&(table->indexes[j]->object->btreeu), values[col_index], insert_index);
+                    break;
+                case SORTED:
+                    // resize sorted column index array if necessary
+                    if (table->indexes[j]->object == NULL)
+                        table->indexes[j]->object = malloc(sizeof(IndexObject));
+                    if (table->indexes[j]->object->column == NULL)
+                        table->indexes[j]->object->column = malloc(sizeof(ColumnIndex));
+                    if (table->indexes[j]->object->column->values == NULL) {
+                        table->indexes[j]->object->column->values = malloc(sizeof(int) * table->capacity);
+                        table->indexes[j]->object->column->indexes = malloc(sizeof(int) * table->capacity);
+                    }
+                    if (must_resize) {
+                        int* new_array1 = realloc(table->indexes[j]->object->column->values, sizeof(int) * table->capacity);
+                        int* new_array2 = realloc(table->indexes[j]->object->column->indexes, sizeof(int) * table->capacity);
+                        if (new_array1 != NULL) {
+                            table->indexes[j]->object->column->values = new_array1;
+                        } else {
+                            send_message->status = EXECUTION_ERROR;
+                            return "-- Re-allocation of unclustered sorted index values failed.";
+                        }
+                        if (new_array2 != NULL) {
+                            table->indexes[j]->object->column->indexes = new_array2;
+                        } else {
+                            send_message->status = EXECUTION_ERROR;
+                            return "-- Re-allocation of unclustered sorted index values failed.";
+                        }
+                    }
+                    // insert value into unclustered column index array
+                    int unclustered_index = insertSorted(table->indexes[j]->object->column->values, values[col_index], table->num_rows);
+                    table->indexes[j]->object->column->indexes[unclustered_index] = insert_index;
+                    break;
+            }
+        }
+
+        table->num_rows++;
+        return "Successfully inserted new row.";
+    }
+
+    // unclustered indices only, simply insert and update indices as necessary
+    for (size_t i = 0; i < table->col_count; i++)
+        table->columns[i]->data[table->num_rows] = values[i];
+
+    // update indices
+    for (size_t i = 0; i < table->num_indexes; i++) {
+        // type should always be unclustered here
+        if (table->indexes[i]->clustered) {
+            send_message->status = EXECUTION_ERROR;
+            return "-- Indexing error; found unexpected clustered indices.";
+        }
+        // find corresponding column index
+        size_t col_index;
+        for (size_t j = 0; j < table->col_count; j++)
+            if (table->columns[j] == table->indexes[i]->column)
+                col_index = j;
+        
+        // insert value appropriately
+        switch (table->indexes[i]->type) {
+            case BTREE:
+                insertValueU(&(table->indexes[i]->object->btreeu), values[col_index], table->num_rows);
+                break;
+            case SORTED:
+                // resize sorted column index array if necessary
+                if (table->indexes[i]->object == NULL)
+                    table->indexes[i]->object = malloc(sizeof(IndexObject));
+                if (table->indexes[i]->object->column == NULL)
+                    table->indexes[i]->object->column = malloc(sizeof(ColumnIndex));
+                if (table->indexes[i]->object->column->values == NULL) {
+                    table->indexes[i]->object->column->values = malloc(sizeof(int) * table->capacity);
+                    table->indexes[i]->object->column->indexes = malloc(sizeof(int) * table->capacity);
+                }
+                if (must_resize) {
+                    int* new_array1 = realloc(table->indexes[i]->object->column->values, sizeof(int) * table->capacity);
+                    int* new_array2 = realloc(table->indexes[i]->object->column->indexes, sizeof(int) * table->capacity);
+                    if (new_array1 != NULL) {
+                        table->indexes[i]->object->column->values = new_array1;
+                    } else {
+                        send_message->status = EXECUTION_ERROR;
+                        return "-- Re-allocation of unclustered sorted index values failed.";
+                    }
+                    if (new_array2 != NULL) {
+                        table->indexes[i]->object->column->indexes = new_array2;
+                    } else {
+                        send_message->status = EXECUTION_ERROR;
+                        return "-- Re-allocation of unclustered sorted index values failed.";
+                    }
+                }
+                // insert value into unsorted column index array
+                int unclustered_index = insertSorted(table->indexes[i]->object->column->values, values[col_index], table->num_rows);
+                table->indexes[i]->object->column->indexes[unclustered_index] = table->num_rows;
+                break;
+        }
     }
     table->num_rows++;
 

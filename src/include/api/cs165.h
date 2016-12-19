@@ -27,10 +27,14 @@ typedef enum IndexType {
     BTREE,
     SORTED
 } IndexType;
+typedef struct ColumnIndex {
+    int* values;
+    int* indexes;
+} ColumnIndex;
 typedef union IndexObject {
     struct BTreeUNode* btreeu;
     struct BTreeCNode* btreec;
-    int* indexes;
+    struct ColumnIndex* column;
 } IndexObject;
 typedef struct Index {
     IndexObject* object;
