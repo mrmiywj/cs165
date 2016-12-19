@@ -1,0 +1,2 @@
+cp -R old_data/data data
+cp old_data/catalog catalog
