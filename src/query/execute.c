@@ -374,7 +374,7 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
                 col_index = i;
 
         // insert new value and get back corresponding index
-        size_t insert_index;
+        size_t insert_index = 0;
         switch (cluster_index->type) {
             case BTREE:
                 insert_index = insertValueC(&(cluster_index->object->btreec), values[col_index]);
@@ -398,7 +398,7 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
                 return "-- Indexing error; found multiple clustered indices.";
             }
             // find corresponding column index
-            size_t col_index;
+            size_t col_index = 0;
             for (size_t i = 0; i < table->col_count; i++)
                 if (table->columns[i] == table->indexes[j]->column)
                     col_index = i;
@@ -458,7 +458,7 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
             return "-- Indexing error; found unexpected clustered indices.";
         }
         // find corresponding column index
-        size_t col_index;
+        size_t col_index = 0;
         for (size_t j = 0; j < table->col_count; j++)
             if (table->columns[j] == table->indexes[i]->column)
                 col_index = j;
@@ -635,7 +635,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
                                 high = current;
                         }
                         // low now contains the smallest element >= minimum
-                        int minIndex = low;
+                        size_t minIndex = low;
                         low = 0;
                         high = table->num_rows;
                         while (low < high) {
@@ -646,14 +646,14 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
                                 low = current + 1;
                         }
                         // high now contains the greatest element <= minimum
-                        int maxIndex = high;
+                        size_t maxIndex = high;
                         if (minIndex >= table->num_rows || maximum <= 0) {
                             new_pointer.result->num_tuples = 0;
                             new_pointer.result->payload = NULL;
                         } else {
                             new_pointer.result->num_tuples = maxIndex - minIndex + 1;
                             int* results = malloc(sizeof(int) * (maxIndex - minIndex + 1));
-                            for (int i = minIndex; i <= maxIndex && i < table->num_rows; i++) {
+                            for (size_t i = minIndex; i <= maxIndex && i < table->num_rows; i++) {
                                 results[i - minIndex] = i;
                             }
                             new_pointer.result->payload = (void*) results;
