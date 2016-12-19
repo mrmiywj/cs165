@@ -589,6 +589,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
                 return "-- Unable to find specified column.";
             }
 
+            queries->table = table;
             queries->column = column;
 
             queries->minimum = malloc(sizeof(int));
@@ -618,6 +619,9 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
         queries->maximum[queries->num_queries] = maximum;
         queries->results[queries->num_queries] = new_pointer.result;
         queries->num_queries++;
+        
+        send_message->status = OK_DONE;
+        return "-- Successfully inserted select query into batch.";
     }
 
     // handle variable select sources separately from database sources
@@ -732,7 +736,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
                         }
                         // high now contains the greatest element <= minimum
                         size_t maxIndex = high;
-                        if (minIndex >= table->num_rows || maximum <= 0) {
+                        if (minIndex >= table->num_rows || maxIndex <= 0) {
                             new_pointer.result->num_tuples = 0;
                             new_pointer.result->payload = NULL;
                         } else {
@@ -1326,6 +1330,8 @@ char* handleBatchQuery(DbOperator* query, message* send_message) {
     if (query->fields.batch.start) {
         // start a batch of queries
         context->queries = malloc(sizeof(BatchedQueries));
+        context->queries->table = NULL;
+        context->queries->column = NULL;
         context->queries->minimum = NULL;
         context->queries->maximum = NULL;
         context->queries->results = NULL;
@@ -1339,102 +1345,327 @@ char* handleBatchQuery(DbOperator* query, message* send_message) {
     }
 }
 
+void findRangeCBatchHelper(BTreeCNode* node, BatchedQueries* queries) {
+    int num_queries = queries->num_queries;
+    if (num_queries <= 0)
+        return;
+    
+    int min_overall = queries->minimum[0];
+    int max_overall = queries->maximum[0];
+    int* minimum = queries->minimum;
+    int* maximum = queries->maximum;
+    for (int i = 0; i < num_queries; i++) {
+        min_overall = min_overall < queries->minimum[i] ? min_overall : queries->minimum[i];
+        max_overall = max_overall > queries->maximum[i] ? max_overall : queries->maximum[i];
+    }
+
+    // find closest leaf
+    BTreeCNode* ptr = node;
+    while (ptr->type != LEAF) {
+        size_t i;
+        for (i = 0; i < ptr->object.parent.num_children - 1; i++)
+            if (ptr->object.parent.dividers[i] > min_overall)
+                break;
+        ptr = ptr->object.parent.children[i];
+    }
+
+    // iterate horizontally and retrieve values from tree
+    int num_tuples[num_queries];
+    int capacities[num_queries];
+    int* results[num_queries];
+    for (int i = 0; i < num_queries; i++) {
+        num_tuples[i] = 0;
+        capacities[i] = 0;
+        results[i] = NULL;
+    }
+
+    BTreeCLeaf* leaf = &(ptr->object.leaf);
+    
+    // TODO: optimize further by dynamically calculating which queries need to be updated
+    while (leaf != NULL) {
+        // iterate over all values in the leaf
+        for (size_t i = 0; i < leaf->num_elements; i++) {
+            // look for values >= min_overall only
+            if (leaf->values[i] < min_overall)
+                continue;
+            // stop iterating if we find a value >= max_overall
+            if (leaf->values[i] >= max_overall) {
+                leaf = NULL;
+                break;
+            }
+            // iterate over all queries and insert appropriately
+            for (int j = 0; j < num_queries; j++) {
+                // skip if not in the needed range
+                if (leaf->values[i] < minimum[j] || leaf->values[i] >= maximum[j])
+                    continue;
+                // resize if needed
+                if (capacities[j] == num_tuples[j]) {
+                    int new_size = (capacities[j] == 0) ? 1 : 2 * capacities[j];
+                    if (new_size == 1) {
+                        results[j] = malloc(sizeof(int));
+                    } else {
+                        int* new_data = realloc(results[j], sizeof(int) * new_size);
+                        if (new_data != NULL)
+                            results[j] = new_data;
+                    }
+                    capacities[j] = new_size;
+                }
+                results[j][num_tuples[j]++] = leaf->indexes[i];
+            }
+        }
+        if (leaf != NULL)
+            leaf = leaf->next;
+    }
+
+    // store values in Results array
+    for (int i = 0; i < num_queries; i++) {
+        queries->results[i]->payload = (void*) results[i];
+        queries->results[i]->data_type = INT;
+        queries->results[i]->num_tuples = num_tuples[i];
+    }
+}
+
+void findRangeUBatchHelper(BTreeUNode* node, BatchedQueries* queries) {
+    int num_queries = queries->num_queries;
+    if (num_queries <= 0)
+        return;
+    
+    int min_overall = queries->minimum[0];
+    int max_overall = queries->maximum[0];
+    int* minimum = queries->minimum;
+    int* maximum = queries->maximum;
+    for (int i = 0; i < num_queries; i++) {
+        min_overall = min_overall < queries->minimum[i] ? min_overall : queries->minimum[i];
+        max_overall = max_overall > queries->maximum[i] ? max_overall : queries->maximum[i];
+    }
+
+    // find closest leaf
+    BTreeUNode* ptr = node;
+    while (ptr->type != LEAF) {
+        size_t i;
+        for (i = 0; i < ptr->object.parent.num_children - 1; i++)
+            if (ptr->object.parent.dividers[i] > min_overall)
+                break;
+        ptr = ptr->object.parent.children[i];
+    }
+
+    // iterate horizontally and retrieve values from tree
+    int num_tuples[num_queries];
+    int capacities[num_queries];
+    int* results[num_queries];
+    for (int i = 0; i < num_queries; i++) {
+        num_tuples[i] = 0;
+        capacities[i] = 0;
+        results[i] = NULL;
+    }
+
+    BTreeULeaf* leaf = &(ptr->object.leaf);
+    
+    // TODO: optimize further by dynamically calculating which queries need to be updated
+    while (leaf != NULL) {
+        // iterate over all values in the leaf
+        for (size_t i = 0; i < leaf->num_elements; i++) {
+            // look for values >= min_overall only
+            if (leaf->values[i] < min_overall)
+                continue;
+            // stop iterating if we find a value >= max_overall
+            if (leaf->values[i] >= max_overall) {
+                leaf = NULL;
+                break;
+            }
+            // iterate over all queries and insert appropriately
+            for (int j = 0; j < num_queries; j++) {
+                // skip if not in the needed range
+                if (leaf->values[i] < minimum[j] || leaf->values[i] >= maximum[j])
+                    continue;
+                // resize if needed
+                if (capacities[j] == num_tuples[j]) {
+                    int new_size = (capacities[j] == 0) ? 1 : 2 * capacities[j];
+                    if (new_size == 1) {
+                        results[j] = malloc(sizeof(int));
+                    } else {
+                        int* new_data = realloc(results[j], sizeof(int) * new_size);
+                        if (new_data != NULL)
+                            results[j] = new_data;
+                    }
+                    capacities[j] = new_size;
+                }
+                results[j][num_tuples[j]++] = leaf->indexes[i];
+            }
+        }
+        if (leaf != NULL)
+            leaf = leaf->next;
+    }
+
+    // store values in Results array
+    for (int i = 0; i < num_queries; i++) {
+        queries->results[i]->payload = (void*) results[i];
+        queries->results[i]->data_type = INT;
+        queries->results[i]->num_tuples = num_tuples[i];
+    }
+}
+
+void findRangeSBatchHelper(Column* column, int total, BatchedQueries* queries) {
+    int num_queries = queries->num_queries;
+    if (num_queries <= 0)
+        return;
+    
+    int min_overall = queries->minimum[0];
+    int max_overall = queries->maximum[0];
+    int* minimum = queries->minimum;
+    int* maximum = queries->maximum;
+    for (int i = 0; i < num_queries; i++) {
+        min_overall = min_overall < queries->minimum[i] ? min_overall : queries->minimum[i];
+        max_overall = max_overall > queries->maximum[i] ? max_overall : queries->maximum[i];
+    }
+    
+    int minIndex, maxIndex;
+    // find starting point in data array
+    int low = 0;
+    int high = total;
+    while (low < high) {
+        int current = (low + high) / 2;
+        if (column->data[current] < min_overall)
+            low = current + 1;
+        else
+            high = current;
+    }
+    minIndex = low;
+
+    // find highest point in data array
+    low = 0;
+    high = total;
+    while (low < high) {
+        int current = (low + high) / 2;
+        if (column->data[current] >= max_overall)
+            high = current - 1;
+        else
+            low = current + 1;
+    }
+    maxIndex = high;
+
+    // iterate and retrieve values
+    int num_tuples[num_queries];
+    int capacities[num_queries];
+    int* results[num_queries];
+    for (int i = 0; i < num_queries; i++) {
+        num_tuples[i] = 0;
+        capacities[i] = 0;
+        results[i] = NULL;
+    }
+
+    if (minIndex >= total || maxIndex <= 0) {
+        for (int i = 0; i < num_queries; i++) {
+            queries->results[i]->num_tuples = 0;
+            queries->results[i]->payload = NULL;
+        }
+    } else {
+        for (int i = minIndex; i <= maxIndex; i++) {
+            // iterate over all queries and insert appropriately
+            for (int j = 0; j < num_queries; j++) {
+                // skip if not in the needed range
+                if (column->data[i] < minimum[j] || column->data[i] >= maximum[j])
+                    continue;
+                // resize if needed
+                if (capacities[j] == num_tuples[j]) {
+                    int new_size = (capacities[j] == 0) ? 1 : 2 * capacities[j];
+                    if (new_size == 1) {
+                        results[j] = malloc(sizeof(int));
+                    } else {
+                        int* new_data = realloc(results[j], sizeof(int) * new_size);
+                        if (new_data != NULL)
+                            results[j] = new_data;
+                    }
+                    capacities[j] = new_size;
+                }
+                results[j][num_tuples[j]++] = i;
+            }
+        }
+    }
+
+    // store values in Results array
+    for (int i = 0; i < num_queries; i++) {
+        queries->results[i]->payload = (void*) results[i];
+        queries->results[i]->data_type = INT;
+        queries->results[i]->num_tuples = num_tuples[i];
+    }
+}
+
 // need to modify this to batch queries
 char* handleBatchSelectQuery(BatchedQueries* queries, message* send_message) {
-    (void) queries;
-    (void) send_message;
-    return "-- Not implemented yet.";
     
     Column* column = queries->column;
-
     Index* index = NULL;
-    for (size_t i = 0; i < table->num_indexes; i++)
-        index = table->indexes[i]->column == column ? table->indexes[i] : index;
+    for (size_t i = 0; i < queries->table->num_indexes; i++)
+        index = queries->table->indexes[i]->column == column ? queries->table->indexes[i] : index;
     
     if (index != NULL) {
         // use index to search for valid values
         switch (index->type) {
             case BTREE:
                 if (index->clustered) {
-                    int* int_payload;
-                    new_pointer.result->num_tuples = findRangeC(&int_payload, index->object->btreec, minimum, maximum);
-                    new_pointer.result->payload = (void*) int_payload;
+                    findRangeCBatchHelper(index->object->btreec, queries);
                 } else {
-                    int* int_payload;
-                    new_pointer.result->num_tuples = findRangeU(&int_payload, index->object->btreeu, minimum, maximum);
-                    new_pointer.result->payload = (void*) int_payload;
+                    findRangeUBatchHelper(index->object->btreeu, queries);
                 }
                 break;
             case SORTED:
                 if (index->clustered) {
-                    int low = 0;
-                    int high = table->num_rows;
-                    while (low < high) {
-                        int current = (low + high) / 2;
-                        if (column->data[current] < minimum)
-                            low = current + 1;
-                        else
-                            high = current;
-                    }
-                    // low now contains the smallest element >= minimum
-                    size_t minIndex = low;
-                    low = 0;
-                    high = table->num_rows;
-                    while (low < high) {
-                        int current = (low + high) / 2;
-                        if (column->data[current] >= maximum)
-                            high = current - 1;
-                        else
-                            low = current + 1;
-                    }
-                    // high now contains the greatest element <= minimum
-                    size_t maxIndex = high;
-                    if (minIndex >= table->num_rows || maximum <= 0) {
-                        new_pointer.result->num_tuples = 0;
-                        new_pointer.result->payload = NULL;
-                    } else {
-                        new_pointer.result->num_tuples = maxIndex - minIndex + 1;
-                        int* results = malloc(sizeof(int) * (maxIndex - minIndex + 1));
-                        for (size_t i = minIndex; i <= maxIndex && i < table->num_rows; i++) {
-                            results[i - minIndex] = i;
-                        }
-                        new_pointer.result->payload = (void*) results;
-                    }
+                    findRangeSBatchHelper(column, queries->table->num_rows, queries);
                 } else {
-                    int* int_payload;
-                    new_pointer.result->num_tuples = findRangeS(&int_payload, index->object->column, table->num_rows, minimum, maximum);
-                    new_pointer.result->payload = (void*) int_payload;
+                    for (int i = 0; i < queries->num_queries; i++) {
+                        int* payload;
+                        queries->results[i]->num_tuples = findRangeS(
+                            &payload, 
+                            index->object->column, 
+                            queries->table->num_rows, 
+                            queries->minimum[i],
+                            queries->maximum[i]
+                        );
+                        queries->results[i]->payload = (void*) payload;
+                    }
                 }
                 break;
         }
     } else {
         // scan through column and store all data in tuples
-        int capacity = 0;
-        int num_inserted = 0;
-        int* data = NULL;
-        for (size_t i = 0; i < table->num_rows; i++) {
-            if (column->data[i] < minimum || column->data[i] >= maximum)
-                continue;
-            if (num_inserted == capacity) {
-                capacity = (capacity == 0) ? 1 : 2 * capacity;
-                if (data == NULL) {
-                    data = calloc(capacity, sizeof(int));
-                } else {
-                    int* new_data = realloc(data, sizeof(int) * capacity);
-                    if (new_data == NULL) {
-                        free(new_data);
-                        free(new_pointer.result);
-                        send_message->status = EXECUTION_ERROR;
-                        return "-- Error calculating result array.";
-                    }
-                    data = new_data;   
-                }
-            }
-            data[num_inserted] = i;
-            num_inserted++;
+        int num_tuples[queries->num_queries];
+        int capacities[queries->num_queries];
+        int* results[queries->num_queries];
+        for (int i = 0; i < queries->num_queries; i++) {
+            num_tuples[i] = 0;
+            capacities[i] = 0;
+            results[i] = NULL;
         }
-        new_pointer.result->payload = data;
-        new_pointer.result->num_tuples = num_inserted;
+
+        for (size_t i = 0; i < queries->table->num_rows; i++) {
+            // iterate over all queries and insert appropriately
+            for (int j = 0; j < queries->num_queries; j++) {
+                // skip if not in the needed range
+                if (column->data[i] < queries->minimum[j] || column->data[i] >= queries->maximum[j])
+                    continue;
+                // resize if needed
+                if (capacities[j] == num_tuples[j]) {
+                    int new_size = (capacities[j] == 0) ? 1 : 2 * capacities[j];
+                    if (new_size == 1) {
+                        results[j] = malloc(sizeof(int));
+                    } else {
+                        int* new_data = realloc(results[j], sizeof(int) * new_size);
+                        if (new_data != NULL)
+                            results[j] = new_data;
+                    }
+                    capacities[j] = new_size;
+                }
+                results[j][num_tuples[j]++] = column->data[i];
+            }
+        }
+
+        // store values in Results array
+        for (int i = 0; i < queries->num_queries; i++) {
+            queries->results[i]->payload = (void*) results[i];
+            queries->results[i]->data_type = INT;
+            queries->results[i]->num_tuples = num_tuples[i];
+        }
     }
 
     send_message->status = OK_DONE;

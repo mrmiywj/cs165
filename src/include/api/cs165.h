@@ -65,6 +65,7 @@ typedef struct Result {
     void *payload;
 } Result;
 typedef struct BatchedQueries {
+    Table* table;
     Column* column;
     int* minimum;
     int* maximum;

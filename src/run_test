@@ -2,7 +2,7 @@ make distclean; make; clear
 for i in $(eval echo {1..$1});
 do
 	echo "Running test $i..."
-	./server & sleep 0.25; cat ../project_tests/test$(printf "%02d" $i).dsl | ./client | diff ../project_tests/test$(printf "%02d" $i).exp -
+	./server & sleep 0.5; cat ../project_tests/test$(printf "%02d" $i).dsl | ./client | diff ../project_tests/test$(printf "%02d" $i).exp -
 	echo "Done with test $i!"
 	echo "==================="
 done 
