@@ -64,6 +64,13 @@ typedef struct Result {
     DataType data_type;
     void *payload;
 } Result;
+typedef struct BatchedQueries {
+    Column* column;
+    int* minimum;
+    int* maximum;
+    Result** results;
+    int num_queries;
+} BatchedQueries;
 
 typedef enum GeneralizedColumnType {
     RESULT,
@@ -82,9 +89,9 @@ typedef struct GeneralizedColumnHandle {
     char name[HANDLE_MAX_SIZE + 1];
     GeneralizedColumn generalized_column;
 } GeneralizedColumnHandle;
-
 typedef struct ClientContext {
     GeneralizedColumnHandle* chandle_table;
+    BatchedQueries* queries;
     int chandles_in_use;
     int chandle_slots;
     int client_fd;
@@ -101,10 +108,10 @@ typedef struct Status {
 typedef enum OperatorType { 
     OP_CREATE, 
     OP_INSERT,
-    OP_LOADER,
     OP_SELECT,
     OP_PRINT,
     OP_FETCH,
+    OP_BATCH,
     OP_MATH
 } OperatorType;
 typedef enum CreateType { CREATE_DB, CREATE_TBL, CREATE_COL, CREATE_IDX } CreateType;
@@ -148,6 +155,9 @@ typedef struct MathOperator {
     // marks whether the first argument is a variable or not
     bool is_var;
 } MathOperator;
+typedef struct BatchOperator {
+    bool start;
+} BatchOperator;
 typedef union OperatorFields {
     CreateOperator create;
     InsertOperator insert;
@@ -155,6 +165,7 @@ typedef union OperatorFields {
     SelectOperator select;
     PrintOperator print;
     FetchOperator fetch;
+    BatchOperator batch;
     MathOperator math;
 } OperatorFields;
 

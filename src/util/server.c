@@ -39,6 +39,7 @@ void handle_client(int client_socket) {
 
     // create the client context here
     ClientContext* new_context = malloc(sizeof(ClientContext));
+    new_context->queries = NULL;
     new_context->chandle_table = NULL;
     new_context->chandles_in_use = 0;
     new_context->chandle_slots = 0;

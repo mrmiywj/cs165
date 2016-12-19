@@ -12,6 +12,7 @@
 #include "parse/select.h"
 #include "parse/fetch.h"
 #include "parse/print.h"
+#include "parse/batch.h"
 #include "parse/math.h"
 
 /**
@@ -100,6 +101,11 @@ DbOperator* process_query(char* query, message* send_message) {
         }
         query += 3;
         return parse_math(query, send_message, handle, type);
+    }
+    if (strncmp(query, "batch_queries", 13) == 0 ||
+        strncmp(query, "batch_execute", 13) == 0) {
+        query += 6;
+        return parse_batch(query, send_message);
     }
     return NULL;
 }

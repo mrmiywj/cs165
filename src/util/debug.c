@@ -65,15 +65,6 @@ void printDbOperator(DbOperator* query) {
             /* DbOperator.fields.insert.num_values */
             log_info("\t# values: %i\n", fields.insert.num_values);
             break;
-        case OP_LOADER:
-            log_info("\tType: LOADER\n");
-            /* DbOperator.fields.loader.db_name */
-            if (fields.loader.file_name == NULL) {
-                log_info("\tNo database name\n");
-            } else {
-                log_info("\tLoader: database %s\n", fields.loader.file_name);
-            }
-            break;
         case OP_SELECT:
             log_info("\tType: SELECT\n");
             log_info("\t    TARGET HANDLE: %s\n", fields.select.handle);
@@ -102,6 +93,9 @@ void printDbOperator(DbOperator* query) {
             log_info("\t    COL: %s\n", fields.fetch.col_name);
             log_info("\t    SOURCE: %s\n", fields.fetch.source);
             log_info("\t    TARGET: %s\n", fields.fetch.target);
+            break;
+        case OP_BATCH:
+            log_info("\tType: BATCH %s\n", fields.batch.start ? "START" : "EXECUTE");
             break;
         case OP_MATH:
             log_info("\tType: MATH\n");
@@ -211,6 +205,20 @@ void printContext(ClientContext* context) {
         return;
     }
     log_info("Client context at %p\n", context);
+    log_info("    Batched queries: %s\n", context->queries == NULL ? "none" : "exist");
+    if (context->queries != NULL) {
+        BatchedQueries* queries = context->queries;
+        log_info("    # queries: %i\n", queries->num_queries);
+        log_info("    Column: %s\n", queries->column->name);
+        log_info("    Mins: [ ");
+        for (int i = 0; i < queries->num_queries; i++)
+            log_info("%i ", queries->minimum[i]);
+        log_info("]\n");
+        log_info("    Maxs: [ ");
+        for (int i = 0; i < queries->num_queries; i++)
+            log_info("%i ", queries->maximum[i]);
+        log_info("]\n");
+    }
     log_info("    # handles: %i\n", context->chandles_in_use);
     log_info("    capacity:  %i\n", context->chandle_slots);
     log_info("    client fd: %i\n", context->client_fd);

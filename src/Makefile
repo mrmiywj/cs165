@@ -66,6 +66,7 @@ INCL_SERVER = cleanup.o \
 	execute.o \
 	fetch.o \
 	insert.o \
+	batch.o \
 	math.o \
 	parse.o \
 	persist.o \
