@@ -393,6 +393,8 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
 
         // check the other indexes to see if any need adjustment
         for (size_t j = 0; j < table->num_indexes; j++) {
+            if (table->columns[j] == cluster_index->column)
+                continue;
             // type should always be unclustered here
             if (table->indexes[j]->clustered && table->indexes[j] != cluster_index) {
                 send_message->status = EXECUTION_ERROR;
