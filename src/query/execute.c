@@ -643,16 +643,21 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
                             if (column->data[current] >= maximum)
                                 high = current - 1;
                             else
-                                low = current;
+                                low = current + 1;
                         }
                         // high now contains the greatest element <= minimum
                         int maxIndex = high;
-                        new_pointer.result->num_tuples = maxIndex - minIndex + 1;
-                        int* results = malloc(sizeof(int) * (maxIndex - minIndex + 1));
-                        for (int i = minIndex; i <= maxIndex; i++) {
-                            results[i - minIndex] = i;
+                        if (minIndex >= table->num_rows || maximum <= 0) {
+                            new_pointer.result->num_tuples = 0;
+                            new_pointer.result->payload = NULL;
+                        } else {
+                            new_pointer.result->num_tuples = maxIndex - minIndex + 1;
+                            int* results = malloc(sizeof(int) * (maxIndex - minIndex + 1));
+                            for (int i = minIndex; i <= maxIndex && i < table->num_rows; i++) {
+                                results[i - minIndex] = i;
+                            }
+                            new_pointer.result->payload = (void*) results;
                         }
-                        new_pointer.result->payload = (void*) results;
                     } else {
                         int* int_payload;
                         new_pointer.result->num_tuples = findRangeS(&int_payload, index->object->column, table->num_rows, minimum, maximum);
