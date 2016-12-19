@@ -108,8 +108,11 @@ bool startupDb() {
     size_t table_count = 0;
     size_t table_capacity = 0;
     Column** columns = NULL;
+    Index** indexes = NULL;
     size_t col_count = 0;
     size_t col_capacity = 0;
+    size_t index_count = 0;
+    size_t index_capacity = 0;
 
     // iterate through file until EOF
     while (fgets(buf, sizeof(buf), fp)) {
@@ -130,10 +133,15 @@ bool startupDb() {
             if (columns != NULL) {
                 tables[table_count - 1]->columns = columns;
                 tables[table_count - 1]->col_count = col_count;
+                tables[table_count - 1]->indexes = indexes;
+                tables[table_count - 1]->num_indexes = index_count;
             }
             columns = NULL;
+            indexes = NULL;
             col_count = 0;
             col_capacity = 0;
+            index_count = 0;
+            index_capacity = 0;
             // check for table capacity
             if (table_count >= table_capacity) {
                 size_t new_size = (table_capacity == 0) ? 1 : 2 * table_capacity;
@@ -151,7 +159,9 @@ bool startupDb() {
             Table* new_table = calloc(1, sizeof(Table));
             strcpy(new_table->name, (buf + 2));
             new_table->columns = NULL;
+            new_table->indexes = NULL;
             new_table->col_count = 0;
+            new_table->num_indexes = 0;
             new_table->num_rows = 0;
             new_table->capacity = 0;
             tables[table_count++] = new_table;
@@ -179,12 +189,59 @@ bool startupDb() {
             columns[col_count++] = new_col;
             continue;
         }
+        // check for an index
+        if (strncmp(buf, "I", 1) == 0) {
+            // check for index capacity
+            if (index_count >= index_capacity) {
+                size_t new_size = (index_capacity == 0) ? 1 : 2 * index_capacity;
+                if (indexes == NULL) {
+                    indexes = calloc(new_size, sizeof(Index*));
+                } else {
+                    Index** new_indexes = realloc(columns, sizeof(Index*) * new_size);
+                    if (new_indexes == NULL)
+                        return false;
+                    indexes = new_indexes;
+                }
+                index_capacity = new_size;
+            }
+            // add new index object
+            Index* new_index = malloc(sizeof(Index));
+            new_index->type = (buf[2] == 'B') ? BTREE : SORTED;
+            new_index->clustered = (buf[4] == 'C');
+            char* col_name = buf + 6;
+            for (size_t i = 0; i < col_count; i++) {
+                if (strcmp(columns[i]->name, col_name) == 0) {
+                    new_index->column = columns[i];
+                }
+            }
+            new_index->object = malloc(sizeof(IndexObject));
+            switch (new_index->type) {
+                case BTREE:
+                    if (new_index->clustered) {
+                        new_index->object->btreec = createBTreeC();
+                    } else {
+                        new_index->object->btreeu = createBTreeU();
+                    }
+                    break;
+                case SORTED:
+                    if (!new_index->clustered) {
+                        new_index->object->column = malloc(sizeof(ColumnIndex));
+                    } else {
+                        new_index->object->column = NULL;
+                    }
+                    break;
+            }
+            indexes[index_count++] = new_index;
+            continue;
+        }
         // read a line that we don't understand
         return false;
     }
     // store last column in table and tables in db
     tables[table_count - 1]->columns = columns;
     tables[table_count - 1]->col_count = col_count;
+    tables[table_count - 1]->indexes = indexes;
+    tables[table_count - 1]->num_indexes = index_count;
     current_db->tables = tables;
     current_db->num_tables = table_count;
     
@@ -217,6 +274,15 @@ bool writeDb() {
         // column names
         for (size_t j = 0; j < current_db->tables[i]->col_count; j++) {
             if (fprintf(fp, "C %s\n", current_db->tables[i]->columns[j]->name) < 0)
+                return false;
+        }
+
+        // indexes
+        for (size_t j = 0; j < current_db->tables[i]->num_indexes; j++) {
+            if (fprintf(fp, "I %c %c %s\n", 
+                current_db->tables[i]->indexes[j]->type == BTREE ? 'B' : 'S',
+                current_db->tables[i]->indexes[j]->clustered ? 'C' : 'U',
+                current_db->tables[i]->indexes[j]->column->name) < 0)
                 return false;
         }
     }

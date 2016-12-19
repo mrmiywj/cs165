@@ -71,7 +71,8 @@ INCL_SERVER = cleanup.o \
 	persist.o \
 	print.o \
 	select.o \
-	btree.o
+	btree.o \
+	sorted.o
 
 VPATH := api:parse:query:util
 

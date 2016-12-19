@@ -1,5 +1,6 @@
 #include "api/db_io.h"
 #include "api/context.h"
+#include "api/sorted.h"
 #include "query/execute.h"
 #include "util/debug.h"
 #include "util/cleanup.h"
@@ -23,29 +24,6 @@ Column* findColumn(Table* table, char* col_name) {
             return table->columns[i];
     }
     return NULL;
-}
-
-void shiftValues(int* data, int min, int max, int increment) {
-    for (int i = max; i >= min && i <= max; i--)
-        data[i + 1] = data[i] + increment;
-}
-
-// inserts a value into a data array; assumes there's enough space
-int insertSorted(int* data, int value, int total) {
-    // binary search for lowest value greater than this value
-    int low = 0;
-    int high = total;
-    while (high > low) {
-        int current = (low + high) / 2;
-        if (data[current] < value)
-            low = current + 1;
-        else
-            high = current;
-    }
-    // low and high now point to the smallest element greater than "value"
-    shiftValues(data, low, total, 0);
-    data[low] = value;
-    return low;
 }
 
 /** execute_DbOperator takes as input the DbOperator and executes the query. **/
@@ -314,16 +292,9 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
                     new_index->column = column;
                     if (!new_index->clustered) {
                         new_index->object = malloc(sizeof(IndexObject));
-                        new_index->object->column = malloc(sizeof(ColumnIndex));
-                        printf("Table capacity: %i\n", table->capacity);
-                        new_index->object->column->values = calloc(1, table->capacity * sizeof(int));
-                        new_index->object->column->indexes = calloc(1, table->capacity * sizeof(int));
-                        for (size_t i = 0; i < table->num_rows; i++) {
-                            int insert_index = insertSorted(new_index->object->column->values, column->data[i], i);
-                            shiftValues(new_index->object->column->indexes, insert_index, i - 1, 0);
-                            new_index->object->column->indexes[insert_index] = i;
-                            printIndex(new_index, "", i + 1);
-                        }
+                        initializeColumnIndex(&(new_index->object->column), table->capacity * sizeof(int));
+                        for (size_t i = 0; i < table->num_rows; i++)
+                            insertIndex(new_index->object->column, column->data[i], i);
                     } else {
                         new_index->object = NULL;
                     }
