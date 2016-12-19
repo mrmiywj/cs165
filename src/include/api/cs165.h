@@ -113,10 +113,12 @@ typedef enum OperatorType {
     OP_PRINT,
     OP_FETCH,
     OP_BATCH,
-    OP_MATH
+    OP_MATH,
+    OP_JOIN
 } OperatorType;
 typedef enum CreateType { CREATE_DB, CREATE_TBL, CREATE_COL, CREATE_IDX } CreateType;
 typedef enum MathType { AVG, SUM, MAX, MIN, ADD, SUB } MathType;
+typedef enum JoinType { HASH, NESTED } JoinType;
 typedef struct CreateOperator {
     CreateType type;
     char** params;
@@ -156,6 +158,15 @@ typedef struct MathOperator {
     // marks whether the first argument is a variable or not
     bool is_var;
 } MathOperator;
+typedef struct JoinOperator {
+    JoinType type;
+    char* fetch1;
+    char* select1;
+    char* fetch2;
+    char* select2;
+    char* handle1;
+    char* handle2;
+} JoinOperator;
 typedef struct BatchOperator {
     bool start;
 } BatchOperator;
@@ -168,6 +179,7 @@ typedef union OperatorFields {
     FetchOperator fetch;
     BatchOperator batch;
     MathOperator math;
+    JoinOperator join;
 } OperatorFields;
 
 typedef struct DbOperator {

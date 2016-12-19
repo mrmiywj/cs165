@@ -104,6 +104,11 @@ void printDbOperator(DbOperator* query) {
                 log_info("\t    PARAM%i:%s\n", i, fields.math.params[i]);
             }
             log_info("\t    First arg is var: %i\n", fields.math.is_var);
+        case OP_JOIN:
+            log_info("\tType: JOIN\n");
+            log_info("\t    Handles: %s, %s\n", fields.join.handle1, fields.join.handle2);
+            log_info("\t    Fetches: %s, %s\n", fields.join.fetch1, fields.join.fetch2);
+            log_info("\t    Selects: %s, %s\n", fields.join.select1, fields.join.select2);
         default:
             break;
     }

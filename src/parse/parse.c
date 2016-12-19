@@ -14,6 +14,7 @@
 #include "parse/print.h"
 #include "parse/batch.h"
 #include "parse/math.h"
+#include "parse/join.h"
 
 /**
  * parse_command takes as input the send_message from the client and then
@@ -106,6 +107,10 @@ DbOperator* process_query(char* query, message* send_message) {
         strncmp(query, "batch_execute", 13) == 0) {
         query += 6;
         return parse_batch(query, send_message);
+    }
+    if (strncmp(query, "join", 4) == 0) {
+        query += 4;
+        return parse_join(query, send_message, handle);
     }
     return NULL;
 }
