@@ -30,6 +30,7 @@ char* handleFetchQuery(DbOperator* query, message* send_message);
 char* handlePrintQuery(DbOperator* query, message* send_message);
 char* handleBatchQuery(DbOperator* query, message* send_message);
 char* handleMathQuery(DbOperator* query, message* send_message);
+char* handleJoinQuery(DbOperator* query, message* send_message);
 
 char* handleBatchSelectQuery(BatchedQueries* queries, message* send_message);
 
