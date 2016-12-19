@@ -396,10 +396,12 @@ bool startupDb() {
         return false;
     }
     // store last column in table and tables in db
-    tables[table_count - 1]->columns = columns;
-    tables[table_count - 1]->col_count = col_count;
-    tables[table_count - 1]->indexes = indexes;
-    tables[table_count - 1]->num_indexes = index_count;
+    if (table_count > 0) {
+        tables[table_count - 1]->columns = columns;
+        tables[table_count - 1]->col_count = col_count;
+        tables[table_count - 1]->indexes = indexes;
+        tables[table_count - 1]->num_indexes = index_count;
+    }
     current_db->tables = tables;
     current_db->num_tables = table_count;
     

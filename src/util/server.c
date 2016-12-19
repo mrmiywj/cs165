@@ -30,6 +30,7 @@
 void handle_client(int client_socket) {
     int done = 0;
     int length = 0;
+    bool shutdown = false;
 
     log_info("Connected to socket: %d.\n", client_socket);
 
@@ -52,14 +53,12 @@ void handle_client(int client_socket) {
         if (length < 0) {
             log_err("-- Client connection closed!\n");
             break;
-        } else if (length == 0) {
-            done = 1;
-        }
+        } else if (length == 0)
+            done = true;
 
         // while not done
-        if (done) {
+        if (done)
             break;
-        }
 
         // initialize receiving buffer
         char recv_buffer[recv_message.length];
@@ -72,6 +71,7 @@ void handle_client(int client_socket) {
         // check for shutdown
         if (strncmp(recv_message.payload, "shutdown", 8) == 0) {
             log_info("-- Shutting down!\n");
+            shutdown = true;
             break;
         }
 
@@ -126,6 +126,8 @@ void handle_client(int client_socket) {
     writeDb();
     log_info("Connection closed at socket %d!\n", client_socket);
     close(client_socket);
+    if (shutdown)
+        exit(0);
 }
 
 int setup_server() {
@@ -171,13 +173,6 @@ int setup_server() {
 }
 
 int main(void) {
-    // BTreeCNode* node = createBTreeC();
-    // for (int i = 0; i < 1000; i++) {
-    //     printf("Inserting value %i gave index: %i\n", i, insertValueC(&node, i));
-    // }
-    // printTreeC(node);
-    // traverseC(node);
-
     signal(SIGPIPE, SIG_IGN);
 
     // set up socket
@@ -198,13 +193,10 @@ int main(void) {
     int client_socket = 0;
 
     // block until we get a connection
-    if ((client_socket = accept(server_socket, (struct sockaddr *)&remote, &t)) == -1) {
-        log_err("L%d: Failed to accept a new connection.\n", __LINE__);
-        exit(1);
+    while ((client_socket = accept(server_socket, (struct sockaddr *)&remote, &t)) != -1) {
+        // handle incoming connection
+        handle_client(client_socket);
     }
-
-    // handle incoming connection
-    handle_client(client_socket);
 
     return 0;
 }
