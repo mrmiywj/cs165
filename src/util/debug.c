@@ -144,6 +144,7 @@ void printTable(Table* tbl, char* prefix) {
     log_info("%s# Columns: %i\n", prefix, tbl->col_count);
     log_info("%s# Rows: %i\n", prefix, tbl->num_rows);
     log_info("%sCapacity: %i\n", prefix, tbl->capacity);
+    log_info("%s# Indexes: %i\n", prefix, tbl->num_indexes);
     
     // print each of the columns
     char next_prefix[16];
@@ -187,14 +188,14 @@ void printIndex(Index* index, char* prefix, size_t num_tuples) {
         case SORTED:
             if (!index->clustered) {
                 log_info("%s    Column has values stored at %p: [ ", prefix, index->object->column->values);
-                for (size_t j = 0; j < num_tuples; j++) {
-                    log_info("%i ", index->object->column->values[j]);
-                }
+                if (index->object->column->values != NULL)
+                    for (size_t j = 0; j < num_tuples; j++)
+                        log_info("%i ", index->object->column->values[j]);
                 log_info("]\n");
                 log_info("%s    Column has indices stored at %p: [ ", prefix, index->object->column->indexes);
-                for (size_t j = 0; j < num_tuples; j++) {
-                    log_info("%i ", index->object->column->indexes[j]);
-                }
+                if (index->object->column->indexes != NULL)
+                    for (size_t j = 0; j < num_tuples; j++)
+                        log_info("%i ", index->object->column->indexes[j]);
                 log_info("]\n");
             } else {
                 log_info("%s    Column is sorted; examine corresponding column.\n", prefix);

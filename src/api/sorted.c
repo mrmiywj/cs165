@@ -31,9 +31,9 @@ int insertSorted(int* data, int value, int total) {
 }
 
 // inserts a value and an index into a ColumnIndex object
-void insertIndex(ColumnIndex* column, int value, int index) {
-    int insert_index = insertSorted(column->values, value, index);
-    shiftValues(column->indexes, insert_index, index - 1, 0);
+void insertIndex(ColumnIndex* column, int value, int index, int total) {
+    int insert_index = insertSorted(column->values, value, total);
+    shiftValues(column->indexes, insert_index, total - 1, 0);
     column->indexes[insert_index] = index;
 }
 

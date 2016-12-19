@@ -13,7 +13,7 @@ void shiftValues(int* data, int min, int max, int increment);
 int insertSorted(int* data, int value, int total);
 
 // inserts a value and an index into a ColumnIndex object
-void insertIndex(ColumnIndex* column, int value, int index);
+void insertIndex(ColumnIndex* column, int value, int index, int total);
 
 // returns the number of values selected
 int findRangeS(int** data, ColumnIndex* column, int total_num, int minimum, int maximum);

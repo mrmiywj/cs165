@@ -294,7 +294,7 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
                         new_index->object = malloc(sizeof(IndexObject));
                         initializeColumnIndex(&(new_index->object->column), table->capacity * sizeof(int));
                         for (size_t i = 0; i < table->num_rows; i++)
-                            insertIndex(new_index->object->column, column->data[i], i);
+                            insertIndex(new_index->object->column, column->data[i], i, i);
                     } else {
                         new_index->object = NULL;
                     }
@@ -410,6 +410,10 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
                     break;
                 case SORTED:
                     // resize sorted column index array if necessary
+                    if (table->indexes[j]->object == NULL) {
+                        table->indexes[j]->object = malloc(sizeof(IndexObject));
+                        table->indexes[j]->object->column = malloc(sizeof(ColumnIndex));
+                    }
                     if (table->indexes[j]->object->column->values == NULL) {
                         table->indexes[j]->object->column->values = malloc(sizeof(int) * table->capacity);
                         table->indexes[j]->object->column->indexes = malloc(sizeof(int) * table->capacity);

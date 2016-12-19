@@ -8,6 +8,7 @@
 
 #include "api/cs165.h"
 
+int createDirectory(const char* path);
 int createDatabase(const char* name);
 int createTable(const char* db, const char* name);
 int createColumn(const char* db, const char* table, const char* name);
