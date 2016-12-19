@@ -25,8 +25,8 @@ Column* findColumn(Table* table, char* col_name) {
     return NULL;
 }
 
-void shiftValues(int* data, size_t min, size_t max, int increment) {
-    for (size_t i = max; i >= min && i <= max; i--)
+void shiftValues(int* data, int min, int max, int increment) {
+    for (int i = max; i >= min && i <= max; i--)
         data[i + 1] = data[i] + increment;
 }
 
@@ -315,6 +315,15 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
                     if (!new_index->clustered) {
                         new_index->object = malloc(sizeof(IndexObject));
                         new_index->object->column = malloc(sizeof(ColumnIndex));
+                        printf("Table capacity: %i\n", table->capacity);
+                        new_index->object->column->values = calloc(1, table->capacity * sizeof(int));
+                        new_index->object->column->indexes = calloc(1, table->capacity * sizeof(int));
+                        for (size_t i = 0; i < table->num_rows; i++) {
+                            int insert_index = insertSorted(new_index->object->column->values, column->data[i], i);
+                            shiftValues(new_index->object->column->indexes, insert_index, i - 1, 0);
+                            new_index->object->column->indexes[insert_index] = i;
+                            printIndex(new_index, "", i + 1);
+                        }
                     } else {
                         new_index->object = NULL;
                     }

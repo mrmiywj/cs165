@@ -57,6 +57,7 @@ bool loadColumnData() {
             // store new data in column
             curr_col->data = values;
             curr_table->num_rows = data_count;
+            curr_table->capacity = data_capacity;
         }
     }
 
