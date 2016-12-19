@@ -1,6 +1,7 @@
 #include "api/db_io.h"
 #include "api/context.h"
 #include "api/sorted.h"
+#include "api/hashtable.h"
 #include "query/execute.h"
 #include "util/debug.h"
 #include "util/cleanup.h"
@@ -542,20 +543,9 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
     strcpy(new_handle.name, handle);
 
     // make space for more context handles if necessary
-    if (context->chandles_in_use == context->chandle_slots) {
-        int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
-        if (context->chandle_table == NULL) {
-            context->chandle_table = calloc(new_size, sizeof(GeneralizedColumnHandle));
-            context->chandle_slots = new_size;
-        } else {
-            GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
-            if (new_table == NULL) {
-                send_message->status = EXECUTION_ERROR;
-                return "-- Problem inserting new handle into client context.";
-            }
-            context->chandle_table = new_table;
-            context->chandle_slots = new_size;
-        }
+    if (checkContextSize(context) != true) {
+        send_message->status = EXECUTION_ERROR;
+        return "-- Problem inserting new handle into client context.";
     }
 
     // check for duplicate handle names
@@ -942,7 +932,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
             case FLOAT: {
                 float* data = (float*) results[i]->payload;
                 for (size_t i = 0; i < num_tuples; i++) {
-                    sprintf(buf, "%f", data[i]);
+                    sprintf(buf, "%.2f", data[i]);
                     length += strlen(buf) + 1;
                 }
                 break;
@@ -950,7 +940,7 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
             case DOUBLE: {
                 double* data = (double*) results[i]->payload;
                 for (size_t i = 0; i < num_tuples; i++) {
-                    sprintf(buf, "%f", data[i]);
+                    sprintf(buf, "%.2f", data[i]);
                     length += strlen(buf) + 1;
                 }
                 break;
@@ -980,12 +970,12 @@ char* handlePrintQuery(DbOperator* query, message* send_message) {
                 }
                 case FLOAT: {
                     float* data = (float*) results[j]->payload;
-                    sprintf(values, "%s%f%c", values, data[i], delim);
+                    sprintf(values, "%s%.2f%c", values, data[i], delim);
                     break;
                 }
                 case DOUBLE: {
                     double* data = (double*) results[j]->payload;
-                    sprintf(values, "%s%f%c", values, data[i], delim);
+                    sprintf(values, "%s%.2f%c", values, data[i], delim);
                     break;
                 }
                 default:
@@ -1688,7 +1678,173 @@ char* handleJoinQuery(DbOperator* query, message* send_message) {
         return "Invalid query."; 
     }
 
-    // retrieve params
+    // get context for current client
+    ClientContext* context = searchContext(query->client_fd);
+    if (context == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find context for current client.";
+    }
+
+    // search for handles in context
+    JoinOperator join = query->fields.join;
+    Result* fetch_r1;
+    Result* fetch_r2;
+    Result* select_r1;
+    Result* select_r2;
+    GeneralizedColumnHandle* columnHandle;
+    
+    columnHandle = findHandle(context, join.fetch1);
+    if (columnHandle == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified fetch source.";
+    }
+    fetch_r1 = columnHandle->generalized_column.column_pointer.result;
+    if (fetch_r1 == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified fetch source.";
+    }
+    columnHandle = findHandle(context, join.fetch2);
+    if (columnHandle == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified fetch source.";
+    }
+    fetch_r2 = columnHandle->generalized_column.column_pointer.result;
+    if (fetch_r2 == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified fetch source.";
+    }
+    columnHandle = findHandle(context, join.select1);
+    if (columnHandle == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified select source.";
+    }
+    select_r1 = columnHandle->generalized_column.column_pointer.result;
+    if (select_r1 == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified select source.";
+    }
+    columnHandle = findHandle(context, join.select2);
+    if (columnHandle == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified select source.";
+    }
+    select_r2 = columnHandle->generalized_column.column_pointer.result;
+    if (select_r2 == NULL) {
+        send_message->status = OBJECT_NOT_FOUND;
+        return "-- Unable to find specified select source.";
+    }
+
+    // create two new Result objects in context// create a new GeneralizedColumnHandle
+    GeneralizedColumnHandle join_r1;
+    GeneralizedColumnPointer join_r1p;
+    join_r1p.result = malloc(sizeof(Result));
+    join_r1p.result->data_type = INT;
+    join_r1p.result->num_tuples = 0;
+    join_r1p.result->payload = NULL;
+    GeneralizedColumn join_r1c = {
+        .column_type = RESULT,
+        .column_pointer = join_r1p
+    };
+    join_r1.generalized_column = join_r1c;
+    strcpy(join_r1.name, join.handle1);
+    GeneralizedColumnHandle join_r2;
+    GeneralizedColumnPointer join_r2p;
+    join_r2p.result = malloc(sizeof(Result));
+    join_r2p.result->data_type = INT;
+    join_r2p.result->num_tuples = 0;
+    join_r2p.result->payload = NULL;
+    GeneralizedColumn join_r2c = {
+        .column_type = RESULT,
+        .column_pointer = join_r2p
+    };
+    join_r2.generalized_column = join_r2c;
+    strcpy(join_r2.name, join.handle2);
+
+    // check size of context and resize if necessary
+    if (checkContextSize(context) != true) {
+        send_message->status = EXECUTION_ERROR;
+        return "-- Problem inserting new handle into client context.";
+    }
+    // check for duplicate handle names
+    int dupIndex = findDuplicateHandle(context, join.handle1);
+    if (dupIndex < 0)
+        context->chandle_table[context->chandles_in_use++] = join_r1;
+    else
+        context->chandle_table[dupIndex] = join_r1;
+    // check size of context and resize if necessary
+    if (checkContextSize(context) != true) {
+        send_message->status = EXECUTION_ERROR;
+        return "-- Problem inserting new handle into client context.";
+    }
+    // check for duplicate handle names
+    dupIndex = findDuplicateHandle(context, join.handle2);
+    if (dupIndex < 0)
+        context->chandle_table[context->chandles_in_use++] = join_r2;
+    else
+        context->chandle_table[dupIndex] = join_r2;
+
+    // holds results from hashtable searches
+    size_t size = 1024;
+    int intermediate[size];
+    int* result1 = NULL;
+    int* result2 = NULL;
+    int count = 0;
+    int capacity = 0;
+
+    // initialize hashtable
+    HashTable* ht;
+    init(&ht);
+    
+    // values and indexes
+    int* values1 = (int*) fetch_r1->payload;
+    int* indexes1 = (int*) select_r1->payload;
+    int* values2 = (int*) fetch_r2->payload;
+    int* indexes2 = (int*) select_r2->payload;
+    
+    // insert all values from the first set into the hashtable
+    for (size_t i = 0; i < fetch_r1->num_tuples; i++)
+        put(ht, values1[i], indexes1[i]);
+
+    // compare against the second array
+    for (size_t i = 0; i < fetch_r2->num_tuples; i++) {
+        int found = get(ht, values2[i], intermediate, size);
+        if (found <= 0)
+            continue;
+        if (result1 == NULL || result2 == NULL) {
+            result1 = malloc(sizeof(int) * size);
+            result2 = malloc(sizeof(int) * size);
+            capacity = size;
+        }
+        if (count + found > capacity) {
+            int* new_res1 = realloc(result1, sizeof(int) * (capacity + size));
+            if (new_res1 != NULL) {
+                result1 = new_res1;
+            } else {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Unable to retrieve all values from join.";
+            }
+            int* new_res2 = realloc(result2, sizeof(int) * (capacity + size));
+            if (new_res2 != NULL) {
+                result2 = new_res2;
+            } else {
+                send_message->status = EXECUTION_ERROR;
+                return "-- Unable to retrieve all values from join.";
+            }
+            capacity += size;
+        }
+        for (int j = count; j < count + found; j++) {
+            result1[j] = intermediate[j - count];
+            result2[j] = indexes2[i];
+        }
+        count += found;
+    }
+
+    // save results
+    join_r1p.result->payload = (void*) result1;
+    join_r1p.result->num_tuples = count;
+    join_r2p.result->payload = (void*) result2;
+    join_r2p.result->num_tuples = count;
+
     send_message->status = OK_DONE;
-    return "-- Not implemented yet.";
+    return "-- Successfully completed join.";
 }

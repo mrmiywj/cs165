@@ -53,11 +53,16 @@ void deleteContext(ClientContext* context) {
 bool checkContextSize(ClientContext* context) {
     if (context->chandles_in_use == context->chandle_slots) {
         int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
-        GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
-        if (new_table == NULL)
-            return false;
-        context->chandle_table = new_table;
-        context->chandle_slots = new_size;
+        if (new_size == 1) {
+            context->chandle_table = malloc(sizeof(GeneralizedColumnHandle));
+            context->chandle_slots = 1;
+        } else {
+            GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
+            if (new_table == NULL)
+                return false;
+            context->chandle_table = new_table;
+            context->chandle_slots = new_size;
+        }
     }
     return true;
 }

@@ -35,6 +35,7 @@ DbOperator* parse_join(char* arguments, message* response, char* handles) {
         return NULL;
     }
     *handle2 = '\0';
+    handle2++;
 
     // parse select and fetch handles
     char* fetch1 = strsep(&copy, ",");
@@ -75,5 +76,6 @@ DbOperator* parse_join(char* arguments, message* response, char* handles) {
         .handle1 = handle1,
         .handle2 = handle2
     };
+
     return dbo;
 }

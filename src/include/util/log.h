@@ -11,9 +11,9 @@
 
 #include "util/message.h"
 
-// #define LOG
-// #define LOG_ERR
-// #define LOG_INFO
+#define LOG
+#define LOG_ERR
+#define LOG_INFO
 
 // Usage: cs165_log(stderr, "%s: error at line: %d", __func__, __LINE__);
 void cs165_log(FILE* out, const char *format, ...);

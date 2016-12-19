@@ -1,8 +1,8 @@
 #include "api/hashtable.h"
 #include "util/log.h"
 
-int hash(HashTable* ht, int key) {
-    return key % ht->tableSize;
+size_t hash(HashTable* ht, int key) {
+    return (key + ht->tableSize) % ht->tableSize;
 }
 
 int destroyNode(HashNode* n, int count) {
@@ -62,8 +62,7 @@ void init(HashTable** ht) {
 void put(HashTable* ht, int key, int value) {
     if (ht->count > ht->tableSize * MAX_Q)
         resize(ht);
-
-    int index = hash(ht, key);
+    size_t index = hash(ht, key);
     HashNode* bucket = ht->buckets[index];
     ht->count++;
 
@@ -73,13 +72,13 @@ void put(HashTable* ht, int key, int value) {
     } else {
         HashNode* newNode = malloc(sizeof(HashNode));
         newNode->count = 1;
-
+        
         newNode->keys = malloc(ht->nodeSize * sizeof(int));
         newNode->keys[0] = key;
-
+        
         newNode->values = malloc(ht->nodeSize * sizeof(int));
         newNode->values[0] = value;
-
+        
         newNode->next = bucket;
         ht->buckets[index] = newNode;
     }

@@ -161,8 +161,8 @@ typedef struct MathOperator {
 typedef struct JoinOperator {
     JoinType type;
     char* fetch1;
-    char* select1;
     char* fetch2;
+    char* select1;
     char* select2;
     char* handle1;
     char* handle2;
