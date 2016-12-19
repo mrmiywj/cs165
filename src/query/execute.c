@@ -312,7 +312,12 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
                     break;
                 case SORTED:
                     new_index->column = column;
-                    new_index->object = NULL;
+                    if (!new_index->clustered) {
+                        new_index->object = malloc(sizeof(IndexObject));
+                        new_index->object->column = malloc(sizeof(ColumnIndex));
+                    } else {
+                        new_index->object = NULL;
+                    }
                     break;
             }
             table->indexes[table->num_indexes++] = new_index;
@@ -425,10 +430,6 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
                     break;
                 case SORTED:
                     // resize sorted column index array if necessary
-                    if (table->indexes[j]->object == NULL)
-                        table->indexes[j]->object = malloc(sizeof(IndexObject));
-                    if (table->indexes[j]->object->column == NULL)
-                        table->indexes[j]->object->column = malloc(sizeof(ColumnIndex));
                     if (table->indexes[j]->object->column->values == NULL) {
                         table->indexes[j]->object->column->values = malloc(sizeof(int) * table->capacity);
                         table->indexes[j]->object->column->indexes = malloc(sizeof(int) * table->capacity);
@@ -484,10 +485,6 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
                 break;
             case SORTED:
                 // resize sorted column index array if necessary
-                if (table->indexes[i]->object == NULL)
-                    table->indexes[i]->object = malloc(sizeof(IndexObject));
-                if (table->indexes[i]->object->column == NULL)
-                    table->indexes[i]->object->column = malloc(sizeof(ColumnIndex));
                 if (table->indexes[i]->object->column->values == NULL) {
                     table->indexes[i]->object->column->values = malloc(sizeof(int) * table->capacity);
                     table->indexes[i]->object->column->indexes = malloc(sizeof(int) * table->capacity);

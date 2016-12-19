@@ -153,7 +153,7 @@ void printTable(Table* tbl, char* prefix) {
         printColumn(tbl->columns[i], next_prefix, tbl->num_rows);
     }
     for (size_t i = 0; i < tbl->num_indexes; i++) {
-        printIndex(tbl->indexes[i], prefix);
+        printIndex(tbl->indexes[i], prefix, tbl->num_rows);
     }
 }
 
@@ -171,7 +171,7 @@ void printColumn(Column* col, char* prefix, size_t nvals) {
 }
 
 /* Prints a description of an Index object. */
-void printIndex(Index* index, char* prefix) {
+void printIndex(Index* index, char* prefix, size_t num_tuples) {
     log_info("%sIndex of type %i, clustered: %i on column %s\n", prefix, index->type, index->clustered, index->column->name);
     char next_prefix[strlen(prefix) + 5];
     sprintf(next_prefix, "%s%s", prefix, "    ");
@@ -186,8 +186,16 @@ void printIndex(Index* index, char* prefix) {
             break;
         case SORTED:
             if (!index->clustered) {
-                log_info("%s    Column has values stored at %p\n", prefix, index->object->column->values);
-                log_info("%s    Column has indices stored at %p\n", prefix, index->object->column->indexes);
+                log_info("%s    Column has values stored at %p: [ ", prefix, index->object->column->values);
+                for (size_t j = 0; j < num_tuples; j++) {
+                    log_info("%i ", index->object->column->values[j]);
+                }
+                log_info("]\n");
+                log_info("%s    Column has indices stored at %p: [ ", prefix, index->object->column->indexes);
+                for (size_t j = 0; j < num_tuples; j++) {
+                    log_info("%i ", index->object->column->indexes[j]);
+                }
+                log_info("]\n");
             } else {
                 log_info("%s    Column is sorted; examine corresponding column.\n", prefix);
             }
