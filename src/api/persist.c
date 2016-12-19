@@ -69,8 +69,6 @@ bool loadColumnData() {
         sprintf(path, "%s%s/%s/index", DATA_PATH, current_db->name, curr_table->name);
         FILE* fp = fopen(path, "r");
 
-        printf("READING IN FROM FILE %s\n", path);
-
         // iterate over all data in file
         Index* curr_index = NULL;
         int curr_capacity = 0;
