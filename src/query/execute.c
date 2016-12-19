@@ -592,7 +592,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             queries->column = column;
 
             queries->minimum = malloc(sizeof(int));
-            queries->minimum = malloc(sizeof(int));
+            queries->maximum = malloc(sizeof(int));
             queries->results = malloc(sizeof(Result*));
         } else {
             int* new_mins = realloc(queries->minimum, sizeof(int) * (queries->num_queries + 1));
@@ -1344,222 +1344,99 @@ char* handleBatchSelectQuery(BatchedQueries* queries, message* send_message) {
     (void) queries;
     (void) send_message;
     return "-- Not implemented yet.";
-    // if (query == NULL || query->type != OP_SELECT) {
-    //     send_message->status = QUERY_UNSUPPORTED;
-    //     return "Invalid query.";
-    // }
     
-    // // retrieve params
-    // SelectOperator select = query->fields.select;
-    // char* handle = select.handle;
-    // int minimum = select.minimum;
-    // int maximum = select.maximum;
+    Column* column = queries->column;
 
-    // // search for context and add to the list of variables
-    // ClientContext* context = searchContext(query->client_fd);
-    // if (context == NULL) {
-    //     send_message->status = OBJECT_NOT_FOUND;
-    //     return "-- Error finding client context for search.";
-    // }
+    Index* index = NULL;
+    for (size_t i = 0; i < table->num_indexes; i++)
+        index = table->indexes[i]->column == column ? table->indexes[i] : index;
+    
+    if (index != NULL) {
+        // use index to search for valid values
+        switch (index->type) {
+            case BTREE:
+                if (index->clustered) {
+                    int* int_payload;
+                    new_pointer.result->num_tuples = findRangeC(&int_payload, index->object->btreec, minimum, maximum);
+                    new_pointer.result->payload = (void*) int_payload;
+                } else {
+                    int* int_payload;
+                    new_pointer.result->num_tuples = findRangeU(&int_payload, index->object->btreeu, minimum, maximum);
+                    new_pointer.result->payload = (void*) int_payload;
+                }
+                break;
+            case SORTED:
+                if (index->clustered) {
+                    int low = 0;
+                    int high = table->num_rows;
+                    while (low < high) {
+                        int current = (low + high) / 2;
+                        if (column->data[current] < minimum)
+                            low = current + 1;
+                        else
+                            high = current;
+                    }
+                    // low now contains the smallest element >= minimum
+                    size_t minIndex = low;
+                    low = 0;
+                    high = table->num_rows;
+                    while (low < high) {
+                        int current = (low + high) / 2;
+                        if (column->data[current] >= maximum)
+                            high = current - 1;
+                        else
+                            low = current + 1;
+                    }
+                    // high now contains the greatest element <= minimum
+                    size_t maxIndex = high;
+                    if (minIndex >= table->num_rows || maximum <= 0) {
+                        new_pointer.result->num_tuples = 0;
+                        new_pointer.result->payload = NULL;
+                    } else {
+                        new_pointer.result->num_tuples = maxIndex - minIndex + 1;
+                        int* results = malloc(sizeof(int) * (maxIndex - minIndex + 1));
+                        for (size_t i = minIndex; i <= maxIndex && i < table->num_rows; i++) {
+                            results[i - minIndex] = i;
+                        }
+                        new_pointer.result->payload = (void*) results;
+                    }
+                } else {
+                    int* int_payload;
+                    new_pointer.result->num_tuples = findRangeS(&int_payload, index->object->column, table->num_rows, minimum, maximum);
+                    new_pointer.result->payload = (void*) int_payload;
+                }
+                break;
+        }
+    } else {
+        // scan through column and store all data in tuples
+        int capacity = 0;
+        int num_inserted = 0;
+        int* data = NULL;
+        for (size_t i = 0; i < table->num_rows; i++) {
+            if (column->data[i] < minimum || column->data[i] >= maximum)
+                continue;
+            if (num_inserted == capacity) {
+                capacity = (capacity == 0) ? 1 : 2 * capacity;
+                if (data == NULL) {
+                    data = calloc(capacity, sizeof(int));
+                } else {
+                    int* new_data = realloc(data, sizeof(int) * capacity);
+                    if (new_data == NULL) {
+                        free(new_data);
+                        free(new_pointer.result);
+                        send_message->status = EXECUTION_ERROR;
+                        return "-- Error calculating result array.";
+                    }
+                    data = new_data;   
+                }
+            }
+            data[num_inserted] = i;
+            num_inserted++;
+        }
+        new_pointer.result->payload = data;
+        new_pointer.result->num_tuples = num_inserted;
+    }
 
-    // // create a new GeneralizedColumnHandle
-    // GeneralizedColumnHandle new_handle;
-    // GeneralizedColumnPointer new_pointer;
-    // new_pointer.result = malloc(sizeof(Result));
-    // new_pointer.result->data_type = INT;
-    // new_pointer.result->num_tuples = 0;
-    // new_pointer.result->payload = NULL;
-    // GeneralizedColumn gen_column = {
-    //     .column_type = RESULT,
-    //     .column_pointer = new_pointer
-    // };
-    // new_handle.generalized_column = gen_column;
-    // strcpy(new_handle.name, handle);
-
-    // // handle variable select sources separately from database sources
-    // if (select.src_is_var) {
-    //     GeneralizedColumnHandle* src_handle = findHandle(context, select.params[0]);
-    //     GeneralizedColumnHandle* val_handle = findHandle(context, select.params[1]);
-    //     if (src_handle == NULL || val_handle == NULL) {
-    //         send_message->status = OBJECT_NOT_FOUND;
-    //         return "-- Unable to find specified select source.";
-    //     }
-    //     Result* src_result = src_handle->generalized_column.column_pointer.result;
-    //     Result* val_result = val_handle->generalized_column.column_pointer.result;
-    //     if (src_result == NULL || val_result == NULL) {
-    //         send_message->status = OBJECT_NOT_FOUND;
-    //         return "-- Unable to find specified select source.";
-    //     }
-
-    //     // scan through column and store all data in tuples
-    //     int capacity = 0;
-    //     int num_inserted = 0;
-    //     int* data = NULL;
-    //     int* indexes = (int*) src_result->payload;
-    //     int* values = (int*) val_result->payload;
-    //     for (size_t i = 0; i < src_result->num_tuples; i++) {
-    //         if (values[i] < minimum || values[i] >= maximum) 
-    //             continue;
-    //         if (num_inserted == capacity) {
-    //             capacity = (capacity == 0) ? 1 : 2 * capacity;
-    //             if (data == NULL) {
-    //                 data = calloc(capacity, sizeof(int));
-    //             } else {
-    //                 int* new_data = realloc(data, sizeof(int) * capacity);
-    //                 if (new_data == NULL) {
-    //                     free(new_data);
-    //                     free(new_pointer.result);
-    //                     send_message->status = EXECUTION_ERROR;
-    //                     return "-- Error calculating result array.";
-    //                 }
-    //                 data = new_data;   
-    //             }
-    //         }
-    //         data[num_inserted] = indexes[i];
-    //         num_inserted++;
-    //     }
-    //     new_pointer.result->payload = data;
-    //     new_pointer.result->num_tuples = num_inserted;
-    // } else {
-    //     char* db_name = select.params[0];
-    //     char* tbl_name = select.params[1];
-    //     char* col_name = select.params[2];
-
-    //     // check database
-    //     if (strcmp(db_name, current_db->name) != 0) {
-    //         send_message->status = OBJECT_NOT_FOUND;
-    //         return "-- Database not found.";
-    //     }
-
-    //     // if we didn't manage to find a table
-    //     Table* table = findTable(tbl_name);
-    //     if (table == NULL) {
-    //         send_message->status = OBJECT_NOT_FOUND;
-    //         return "-- Unable to find specified table.";
-    //     }
-
-    //     // if we didn't manage to find a column
-    //     Column* column = findColumn(table, col_name);
-    //     if (column == NULL) {
-    //         send_message->status = OBJECT_NOT_FOUND;
-    //         return "-- Unable to find specified column.";
-    //     }
-
-    //     // check for an index we can use
-    //     Index* index = NULL;
-    //     for (size_t i = 0; i < table->num_indexes; i++)
-    //         index = table->indexes[i]->column == column ? table->indexes[i] : index;
-        
-    //     if (index != NULL) {
-    //         // use index to search for valid values
-    //         switch (index->type) {
-    //             case BTREE:
-    //                 if (index->clustered) {
-    //                     int* int_payload;
-    //                     new_pointer.result->num_tuples = findRangeC(&int_payload, index->object->btreec, minimum, maximum);
-    //                     new_pointer.result->payload = (void*) int_payload;
-    //                 } else {
-    //                     int* int_payload;
-    //                     new_pointer.result->num_tuples = findRangeU(&int_payload, index->object->btreeu, minimum, maximum);
-    //                     new_pointer.result->payload = (void*) int_payload;
-    //                 }
-    //                 break;
-    //             case SORTED:
-    //                 if (index->clustered) {
-    //                     int low = 0;
-    //                     int high = table->num_rows;
-    //                     while (low < high) {
-    //                         int current = (low + high) / 2;
-    //                         if (column->data[current] < minimum)
-    //                             low = current + 1;
-    //                         else
-    //                             high = current;
-    //                     }
-    //                     // low now contains the smallest element >= minimum
-    //                     size_t minIndex = low;
-    //                     low = 0;
-    //                     high = table->num_rows;
-    //                     while (low < high) {
-    //                         int current = (low + high) / 2;
-    //                         if (column->data[current] >= maximum)
-    //                             high = current - 1;
-    //                         else
-    //                             low = current + 1;
-    //                     }
-    //                     // high now contains the greatest element <= minimum
-    //                     size_t maxIndex = high;
-    //                     if (minIndex >= table->num_rows || maximum <= 0) {
-    //                         new_pointer.result->num_tuples = 0;
-    //                         new_pointer.result->payload = NULL;
-    //                     } else {
-    //                         new_pointer.result->num_tuples = maxIndex - minIndex + 1;
-    //                         int* results = malloc(sizeof(int) * (maxIndex - minIndex + 1));
-    //                         for (size_t i = minIndex; i <= maxIndex && i < table->num_rows; i++) {
-    //                             results[i - minIndex] = i;
-    //                         }
-    //                         new_pointer.result->payload = (void*) results;
-    //                     }
-    //                 } else {
-    //                     int* int_payload;
-    //                     new_pointer.result->num_tuples = findRangeS(&int_payload, index->object->column, table->num_rows, minimum, maximum);
-    //                     new_pointer.result->payload = (void*) int_payload;
-    //                 }
-    //                 break;
-    //         }
-    //     } else {
-    //         // scan through column and store all data in tuples
-    //         int capacity = 0;
-    //         int num_inserted = 0;
-    //         int* data = NULL;
-    //         for (size_t i = 0; i < table->num_rows; i++) {
-    //             if (column->data[i] < minimum || column->data[i] >= maximum)
-    //                 continue;
-    //             if (num_inserted == capacity) {
-    //                 capacity = (capacity == 0) ? 1 : 2 * capacity;
-    //                 if (data == NULL) {
-    //                     data = calloc(capacity, sizeof(int));
-    //                 } else {
-    //                     int* new_data = realloc(data, sizeof(int) * capacity);
-    //                     if (new_data == NULL) {
-    //                         free(new_data);
-    //                         free(new_pointer.result);
-    //                         send_message->status = EXECUTION_ERROR;
-    //                         return "-- Error calculating result array.";
-    //                     }
-    //                     data = new_data;   
-    //                 }
-    //             }
-    //             data[num_inserted] = i;
-    //             num_inserted++;
-    //         }
-    //         new_pointer.result->payload = data;
-    //         new_pointer.result->num_tuples = num_inserted;
-    //     }
-    // }
-
-    // if (context->chandles_in_use == context->chandle_slots) {
-    //     int new_size = (context->chandle_slots == 0) ? 1 : 2 * context->chandle_slots;
-    //     if (context->chandle_table == NULL) {
-    //         context->chandle_table = calloc(new_size, sizeof(GeneralizedColumnHandle));
-    //         context->chandle_slots = new_size;
-    //     } else {
-    //         GeneralizedColumnHandle* new_table = realloc(context->chandle_table, new_size * sizeof(GeneralizedColumnHandle));
-    //         if (new_table == NULL) {
-    //             send_message->status = EXECUTION_ERROR;
-    //             return "-- Problem inserting new handle into client context.";
-    //         }
-    //         context->chandle_table = new_table;
-    //         context->chandle_slots = new_size;
-    //     }
-    // }
-    // // check for duplicate handle names
-    // int dupIndex = findDuplicateHandle(context, handle);
-    // if (dupIndex < 0) {
-    //     context->chandle_table[context->chandles_in_use++] = new_handle;
-    // } else {
-    //     context->chandle_table[dupIndex] = new_handle;
-    // }
-
-    // send_message->status = OK_DONE;
-    // return "Successfully selected data from column.";
+    send_message->status = OK_DONE;
+    return "Successfully selected data from column.";
 }

@@ -1,2 +1,4 @@
-create(idx,db1.tbl1.col1,sorted,unclustered)
-s1=select(db1.tbl1.col1,30,70)
+batch_queries()
+s1=select(db1.tbl3.col1,10,20)
+s2=select(db1.tbl3.col1,800,830)
+batch_execute()
