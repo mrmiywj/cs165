@@ -1,9 +1,14 @@
 # make distclean; make; clear
 rm -rf data catalog
+./server &
 for i in $(eval echo {1..$1});
 do
 	echo "Running test $i..."
-	./server & sleep 0.20; cat ../project_tests/test$(printf "%02d" $i).dsl | ./client | diff ../project_tests/test$(printf "%02d" $i).exp -
+	cat ../project_tests/test$(printf "%02d" $i).dsl | ./client | diff ../project_tests/test$(printf "%02d" $i).exp -
+	if grep -q shutdown "../project_tests/test$(printf "%02d" $i).dsl"; then
+		echo "Server shutdown after test $i; restarting..."
+		./server &
+	fi
 	echo "Done with test $i!"
 	echo "==================="
 done 
