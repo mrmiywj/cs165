@@ -391,6 +391,8 @@ char* handleInsertQuery(DbOperator* query, message* send_message) {
         
         // now shift all values in all columns starting from insert_index onwards
         for (size_t j = 0; j < table->col_count; j++) {
+            if (j == col_index)
+                continue;
             shiftValues(table->columns[j]->data, insert_index, table->num_rows, 0);
             table->columns[j]->data[insert_index] = values[j];
         }

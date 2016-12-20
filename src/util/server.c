@@ -121,11 +121,11 @@ void handle_client(int client_socket) {
         log_info("==============================================================\n");
     } while (!done);
 
-    // shutdown: delete context and write db to file
-    deleteContext(new_context);
-    writeDb();
     log_info("Connection closed at socket %d!\n", client_socket);
     close(client_socket);
+    // delete context and write db to file
+    deleteContext(new_context);
+    writeDb();
     if (shutdown)
         exit(0);
 }

@@ -179,6 +179,7 @@ bool insertValueLeafU(BTreeULeaf* leaf, int value, int index) {
     leaf->values[i] = value;
     leaf->indexes[i] = index;
     leaf->num_elements++;
+
     return true;
 }
 
@@ -266,6 +267,17 @@ void insertValueU(BTreeUNode** tree, int value, int index) {
                 insertValueU(tree, value, index);
             }
             break;
+    }
+    // successfully inserted value and index; need to shift all other indexes forward by 1
+    BTreeUNode* ptr = *tree;
+    while (ptr->type != LEAF) {
+        ptr = ptr->object.parent.children[0];
+    }
+    BTreeULeaf* leaf = &(ptr->object.leaf);
+    while (leaf != NULL) {
+        for (size_t i = 0; i < leaf->num_elements; i++)
+            leaf->indexes[i] += (leaf->indexes[i] >= index && leaf->values[i] != value);
+        leaf = leaf->next;
     }
 }
 
