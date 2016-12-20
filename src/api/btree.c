@@ -269,8 +269,15 @@ void insertValueU(BTreeUNode** tree, int value, int index) {
     }
 }
 
-void deleteValueU(BTreeUNode** tree, int value, int index);
-void updateValueU(BTreeUNode** tree, int value, int index, int new_value);
+void deleteValueU(BTreeUNode** tree, int value, int index) {
+    (void) tree;
+    (void) value;
+    (void) index;
+}
+void updateValueU(BTreeUNode** tree, int value, int index, int new_value) {
+    deleteValueU(tree, value, index);
+    insertValueU(tree, new_value, index);
+}
 
 void printTreeU(BTreeUNode* tree, char* prefix) {
     switch (tree->type) {
@@ -667,8 +674,15 @@ size_t insertValueC(BTreeCNode** tree, int value) {
     return 0;
 }
 
-void deleteValueC(BTreeCNode** tree, int value, int index);
-size_t updateValueC(BTreeCNode** tree, int value, int index, int new_value);
+void deleteValueC(BTreeCNode** tree, int value, int index) {
+    (void) tree;
+    (void) value;
+    (void) index;
+}
+size_t updateValueC(BTreeCNode** tree, int value, int index, int new_value) {
+    deleteValueC(tree, value, index);
+    return insertValueC(tree, new_value);
+}
 
 void printTreeC(BTreeCNode* tree, char* prefix) {
     switch (tree->type) {
