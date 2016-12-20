@@ -1,3 +1,5 @@
+#include <sys/time.h>
+
 #include "api/db_io.h"
 #include "api/context.h"
 #include "api/sorted.h"
@@ -64,7 +66,7 @@ char* executeDbOperator(DbOperator* query, message* send_message) {
         break;
     }
 
-    printDatabase(current_db);
+    // printDatabase(current_db);
     
     free(query);
     if (res != NULL)
@@ -288,9 +290,8 @@ char* handleCreateQuery(DbOperator* query, message* send_message) {
                         }
                     } else {
                         new_index->object->btreeu = createBTreeU();
-                        for (size_t i = 0; i < table->num_rows; i++) {
+                        for (size_t i = 0; i < table->num_rows; i++)
                             insertValueU(&(new_index->object->btreeu), column->data[i], i);
-                        }
                     }
                     break;
                 case SORTED:
@@ -696,6 +697,9 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             index = table->indexes[i]->column == column ? table->indexes[i] : index;
         
         if (index != NULL) {
+            struct timeval stop, start;
+            gettimeofday(&start, NULL);
+            
             // use index to search for valid values
             switch (index->type) {
                 case BTREE:
@@ -751,7 +755,18 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
                     }
                     break;
             }
+
+            gettimeofday(&stop, NULL);
+            log_info("-- Select query using %s %s index took %lu milliseconds.  %i out of %i tuples.\n", 
+                index->clustered ? "clustered" : "unclustered",
+                index->type == BTREE ? "BTREE" : "SORTED",
+                1000000 * (stop.tv_sec - start.tv_sec) + stop.tv_usec - start.tv_usec,
+                new_pointer.result->num_tuples,
+                table->num_rows);
         } else {
+            struct timeval stop, start;
+            gettimeofday(&start, NULL);
+            
             // scan through column and store all data in tuples
             int capacity = 0;
             int num_inserted = 0;
@@ -779,6 +794,12 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             }
             new_pointer.result->payload = data;
             new_pointer.result->num_tuples = num_inserted;
+
+            gettimeofday(&stop, NULL);
+            log_info("-- Select query using scan took %lu milliseconds.  %i out of %i tuples.\n", 
+                1000000 * (stop.tv_sec - start.tv_sec) + stop.tv_usec - start.tv_usec, 
+                num_inserted,
+                table->num_rows);
         }
     }
 

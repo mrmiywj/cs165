@@ -126,7 +126,7 @@ void handle_client(int client_socket) {
     // delete context and write db to file
     deleteContext(new_context);
     writeDb();
-    if (shutdown)
+    if (shutdown == true)
         exit(0);
 }
 
