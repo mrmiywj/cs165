@@ -104,7 +104,10 @@ bool insertValueParentU(BTreeUParent* parent, int value, int index) {
                 node1->object.parent.next = &(node2->object.parent);
                 
                 // bubble up new divider to parent
-                new_divider = node2->object.parent.dividers[0];
+                BTreeUNode* p = node2;
+                while (p->type != LEAF)
+                    p = p->object.parent.children[0];
+                new_divider = p->object.leaf.values[0];
                 for (int j = parent->num_children - 2; j >= i; j--) {
                     parent->dividers[i+1] = parent->dividers[i];
                 }
@@ -221,11 +224,15 @@ void insertValueU(BTreeUNode** tree, int value, int index) {
                 // fix next pointers
                 old_root->object.parent.next = &(new_parent->object.parent);
                 // bubble up divider to new root
-                new_root->object.parent.dividers[0] = new_parent->object.parent.dividers[0];
+                BTreeUNode* p = new_parent;
+                while (p->type != LEAF)
+                    p = p->object.parent.children[0];
+                new_root->object.parent.dividers[0] = p->object.leaf.values[0];
 
                 // save new root node and re-insert
                 *tree = new_root;
                 insertValueU(tree, value, index);
+                return;
             }
             break;
         case LEAF:
@@ -265,6 +272,7 @@ void insertValueU(BTreeUNode** tree, int value, int index) {
                 // save new root node and re-insert
                 *tree = new_root;
                 insertValueU(tree, value, index);
+                return;
             }
             break;
     }
@@ -317,33 +325,43 @@ bool deleteValueParentU(BTreeUNode** tree, BTreeUParent* parent, int value, int 
                     // need to merge these two siblings; shift values over
                     for (size_t j = 0; j < parent_orig->num_children; j++) {
                         parent_sib->children[parent_sib->num_children + j] = parent_orig->children[j];
+                        parent_sib->dividers[parent_sib->num_children + j] = parent_orig->dividers[j];
                     }
                     parent_sib->num_children += parent_orig->num_children;
                     parent_sib->next = parent_orig->next;
                     // remove original child parent
                     for (size_t j = i; j < parent->num_children - 1; j++) {
                         parent->children[j] = parent->children[j + 1];
-                        parent->dividers[j] = parent->dividers[j + 1];
+                        parent->dividers[j - 1] = parent->dividers[j];
                     }
+                    // update parent divider
+                    BTreeUParent* p = parent_orig;
+                    while (p->children[0]->type == PARENT)
+                        p = &(p->children[0]->object.parent);
+                    parent_sib->dividers[i + 1] = p->children[0]->object.leaf.values[0];
                     parent->num_children--;
                     parent->children[parent->num_children] = NULL;
-                    parent->dividers[parent->num_children] = 0;
+                    parent->dividers[parent->num_children - 1] = 0;
                 } else {
-                    // shift all values in original over one to make space
-                    for (size_t j = parent_orig->num_children; j > 1; j--) {
-                        parent_orig->children[j] = parent_orig->children[j - 1];
-                        parent_orig->dividers[j - 1] = parent_orig->dividers[j - 2];
+                    // shift all values in orig over one to make space
+                    for (size_t j = parent_orig->num_children - 1; j > 0; j--) {
+                        parent_orig->children[j + 1] = parent_orig->children[j];
+                        parent_orig->dividers[j] = parent_orig->dividers[j - 1];
                     }
                     parent_orig->children[1] = parent_orig->children[0];
                     // insert new value and divider from sibling
                     parent_orig->children[0] = parent_sib->children[parent_sib->num_children - 1];
                     parent_orig->dividers[0] = parent->dividers[i - 1];
+                    // update parent divider
+                    BTreeUParent* p = parent_orig;
+                    while (p->children[0]->type == PARENT)
+                        p = &(p->children[0]->object.parent);
+                    parent->dividers[i - 1] = p->children[0]->object.leaf.values[0];
+                    // delete old values
                     parent_sib->children[parent_sib->num_children - 1] = NULL;
                     parent_sib->dividers[parent_sib->num_children - 2] = 0;
-                    parent_orig->num_children++;
                     parent_sib->num_children--;
-                    // update parent divider
-                    parent->dividers[i - 1] = parent_sib->dividers[parent_sib->num_children - 2];
+                    parent_orig->num_children++;
                 }
                 break;
             }
@@ -352,29 +370,35 @@ bool deleteValueParentU(BTreeUNode** tree, BTreeUParent* parent, int value, int 
                 BTreeULeaf* leaf_orig = &(parent->children[i]->object.leaf);
                 if (leaf_sib->num_elements <= CAPACITY) {
                     // need to merge these two siblings
-                    for (size_t j = 0; j < leaf_orig->num_elements - 1; j++)
+                    for (size_t j = 0; j < leaf_orig->num_elements; j++) {
                         leaf_sib->values[leaf_sib->num_elements + j] = leaf_orig->values[j];
+                        leaf_sib->indexes[leaf_sib->num_elements + j] = leaf_orig->indexes[j];
+                    }
                     leaf_sib->num_elements += leaf_orig->num_elements;
                     leaf_sib->next = leaf_orig->next;
                     // remove original child leaf
                     for (size_t j = i; j < parent->num_children - 1; j++) {
                         parent->children[j] = parent->children[j + 1];
-                        parent->dividers[j] = parent->dividers[j + 1];
+                        parent->dividers[j - 1] = parent->dividers[j];
                     }
                     parent->num_children--;
                     parent->children[parent->num_children] = NULL;
-                    parent->dividers[parent->num_children] = 0;
+                    parent->dividers[parent->num_children - 1] = 0;
                 } else {
-                    // shift all values in original over one to make space
-                    for (size_t j = leaf_orig->num_elements; j > 1; j--)
+                    // shift all values in orig over one to make space
+                    for (size_t j = leaf_orig->num_elements; j > 0; j--) {
                         leaf_orig->values[j] = leaf_orig->values[j - 1];
-                    // insert new value from sibling
+                        leaf_orig->indexes[j] = leaf_orig->indexes[j - 1];
+                    }
+                    // insert value and index from sibling
                     leaf_orig->values[0] = leaf_sib->values[leaf_sib->num_elements - 1];
-                    leaf_sib->values[leaf_sib->num_elements - 1] = 0;
-                    leaf_orig->num_elements++;
-                    leaf_sib->num_elements--;
+                    leaf_orig->indexes[0] = leaf_sib->indexes[leaf_sib->num_elements - 1];
                     // update parent divider
                     parent->dividers[i - 1] = leaf_orig->values[0];
+                    leaf_sib->values[leaf_sib->num_elements - 1] = 0;
+                    leaf_sib->indexes[leaf_sib->num_elements - 1] = 0;
+                    leaf_sib->num_elements--;
+                    leaf_orig->num_elements++;
                 }
                 break;
             }
@@ -390,30 +414,41 @@ bool deleteValueParentU(BTreeUNode** tree, BTreeUParent* parent, int value, int 
                     // need to merge these two siblings; shift values over
                     for (size_t j = 0; j < parent_sib->num_children; j++) {
                         parent_orig->children[parent_orig->num_children + j] = parent_sib->children[j];
+                        parent_orig->dividers[parent_orig->num_children + j] = parent_sib->dividers[j];
                     }
                     parent_orig->num_children += parent_sib->num_children;
                     parent_orig->next = parent_sib->next;
                     // remove original child parent
-                    for (size_t j = i; j < parent->num_children - 1; j++) {
+                    for (size_t j = i + 1; j < parent->num_children - 1; j++) {
                         parent->children[j] = parent->children[j + 1];
-                        parent->dividers[j] = parent->dividers[j + 1];
+                        parent->dividers[j - 1] = parent->dividers[j];
                     }
+                    // update parent divider
+                    BTreeUParent* p = parent_sib;
+                    while (p->children[0]->type == PARENT)
+                        p = &(p->children[0]->object.parent);
+                    parent_orig->dividers[i + 1] = p->children[0]->object.leaf.values[0];
                     parent->num_children--;
                     parent->children[parent->num_children] = NULL;
-                    parent->dividers[parent->num_children] = 0;
+                    parent->dividers[parent->num_children - 1] = 0;
                 } else {
                     // insert new value and divider from sibling
-                    parent_orig->children[parent_orig->num_children] = parent_sib->children[0];
-                    parent_orig->dividers[0] = parent->dividers[i - 1];
-                    // update parent dividers
-                    parent->dividers[i - 1] = parent_sib->dividers[0];
+                    parent_orig->dividers[parent_orig->num_children - 1] = parent->dividers[i];
+                    parent_orig->children[parent_orig->num_children] = parent_sib->children[0]; 
                     // shift all values in sib over one to fill hole
-                    for (size_t j = 0; j < parent_sib->num_children - 1; j++) {
+                    for (size_t j = 0; j < parent_sib->num_children - 2; j++) {
                         parent_sib->children[j] = parent_sib->children[j + 1];
                         parent_sib->dividers[j] = parent_sib->dividers[j + 1];
                     }
+                    parent_sib->children[parent_sib->num_children - 2] = parent_sib->children[parent_sib->num_children - 1];
+                    // update parent divider
+                    BTreeUParent* p = parent_sib;
+                    while (p->children[0]->type == PARENT)
+                        p = &(p->children[0]->object.parent);
+                    parent->dividers[i] = p->children[0]->object.leaf.values[0];
+                    // delete old values
                     parent_sib->children[parent_sib->num_children - 1] = NULL;
-                    // update child counts
+                    parent_sib->dividers[parent_sib->num_children - 2] = 0;
                     parent_orig->num_children++;
                     parent_sib->num_children--;
                 }
@@ -423,30 +458,34 @@ bool deleteValueParentU(BTreeUNode** tree, BTreeUParent* parent, int value, int 
                 BTreeULeaf* leaf_sib = &(sibling->object.leaf);
                 BTreeULeaf* leaf_orig = &(parent->children[i]->object.leaf);
                 if (leaf_sib->num_elements <= CAPACITY) {
-                    // need to merge these two siblings; shift values over
+                    // need to merge these two siblings
                     for (size_t j = 0; j < leaf_sib->num_elements; j++) {
                         leaf_orig->values[leaf_orig->num_elements + j] = leaf_sib->values[j];
-                    }
+                        leaf_orig->indexes[leaf_orig->num_elements + j] = leaf_sib->indexes[j];
+                    }   
                     leaf_orig->num_elements += leaf_sib->num_elements;
                     leaf_orig->next = leaf_sib->next;
                     // remove original child leaf
-                    for (size_t j = i; j < parent->num_children - 1; j++) {
+                    for (size_t j = i + 1; j < parent->num_children - 1; j++) {
                         parent->children[j] = parent->children[j + 1];
-                        parent->dividers[j] = parent->dividers[j + 1];
+                        parent->dividers[j - 1] = parent->dividers[j];
                     }
                     parent->num_children--;
                     parent->children[parent->num_children] = NULL;
-                    parent->dividers[parent->num_children] = 0;
+                    parent->dividers[parent->num_children - 1] = 0;
                 } else {
-                    // insert new value from sibling
+                    // insert value and index from sibling
                     leaf_orig->values[leaf_orig->num_elements] = leaf_sib->values[0];
+                    leaf_orig->indexes[leaf_orig->num_elements] = leaf_sib->indexes[0];
+                    // update parent divider
+                    parent->dividers[i] = leaf_sib->values[1];
                     // shift all values in sib over one to fill hole
-                    for (size_t j = 0; j < leaf_sib->num_elements - 1; j++)
+                    for (size_t j = 0; j < leaf_sib->num_elements - 1; j++) {
                         leaf_sib->values[j] = leaf_sib->values[j + 1];
+                        leaf_sib->indexes[j] = leaf_sib->indexes[j + 1];
+                    }
                     leaf_sib->values[leaf_sib->num_elements - 1] = 0;
-                    // update parent dividers
-                    parent->dividers[i - 1] = leaf_sib->values[0];
-                    // update value counts
+                    leaf_sib->indexes[leaf_sib->num_elements - 1] = 0;
                     leaf_orig->num_elements++;
                     leaf_sib->num_elements--;
                 }
@@ -465,18 +504,18 @@ bool deleteValueLeafU(BTreeUNode** tree, BTreeULeaf* leaf, int value, int index)
         if (leaf->values[i] >= value)
             break;
     
-    // search from this value onwards to find a 
+    // search from this value onwards to find match
     for (size_t j = i; j < leaf->num_elements; j++) {
-        if (leaf->values[j] > value) 
+        if (leaf->values[j] > value)
             break;
         if (leaf->values[j] == value && leaf->indexes[j] == index) {
             // delete this value
             for (size_t k = j; k < leaf->num_elements - 1; k++) {
                 leaf->values[k] = leaf->values[k + 1];
-                leaf->indexes[k] = leaf->values[k + 1];
+                leaf->indexes[k] = leaf->indexes[k + 1];
             }
-            leaf->values[leaf->num_elements - 1] = 0;
-            leaf->indexes[leaf->num_elements - 1] = 0;
+            leaf->values[leaf->num_elements] = 0;
+            leaf->indexes[leaf->num_elements] = 0;
             leaf->num_elements--;
 
             // deleted value and index; need to shift all other indexes backward by 1
@@ -484,12 +523,13 @@ bool deleteValueLeafU(BTreeUNode** tree, BTreeULeaf* leaf, int value, int index)
             while (ptr->type != LEAF) {
                 ptr = ptr->object.parent.children[0];
             }
-            BTreeULeaf* leaf = &(ptr->object.leaf);
-            while (leaf != NULL) {
-                for (size_t i = 0; i < leaf->num_elements; i++)
-                    leaf->indexes[i] -= leaf->indexes[i] >= index;
-                leaf = leaf->next;
+            BTreeULeaf* ptr_leaf = &(ptr->object.leaf);
+            while (ptr_leaf != NULL) {
+                for (size_t i = 0; i < ptr_leaf->num_elements; i++)
+                    ptr_leaf->indexes[i] -= ptr_leaf->indexes[i] >= index;
+                ptr_leaf = ptr_leaf->next;
             }
+            break;
         }
     }
     
@@ -499,7 +539,7 @@ bool deleteValueLeafU(BTreeUNode** tree, BTreeULeaf* leaf, int value, int index)
 void deleteValueU(BTreeUNode** tree, int value, int index) {
     BTreeUNode* root = *tree;
     // we don't care if the root has fewer than CAPACITY values/children
-    switch ((*tree)->type) {
+    switch (root->type) {
         case PARENT:
             // unless there's only one child in the root now
             if (deleteValueParentU(tree, &(root->object.parent), value, index) == false)
@@ -511,6 +551,7 @@ void deleteValueU(BTreeUNode** tree, int value, int index) {
             break;
     }
 }
+
 void updateValueU(BTreeUNode** tree, int value, int index, int new_value) {
     deleteValueU(tree, value, index);
     insertValueU(tree, new_value, index);

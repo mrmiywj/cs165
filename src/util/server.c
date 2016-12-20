@@ -173,6 +173,17 @@ int setup_server() {
 }
 
 int main(void) {
+    // BTreeUNode* node = createBTreeU();
+    // for (int i = 500; i > 0; i--) {
+    //     insertValueU(&node, i, 0);
+    //     printTreeU(node, "");
+    // }
+    // for (int i = 500; i > 0; i--) {
+    //     deleteValueU(&node, i, i - 1);
+    //     printTreeU(node, "");
+    // }
+    // exit(0);
+
     signal(SIGPIPE, SIG_IGN);
 
     // set up socket

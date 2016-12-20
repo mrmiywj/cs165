@@ -1,7 +1,7 @@
 #ifndef BTREE_H
 #define BTREE_H
 
-#define CAPACITY 100
+#define CAPACITY 3
 
 #include "api/cs165.h"
 
