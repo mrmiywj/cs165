@@ -176,6 +176,20 @@ Loads are done simply by sending row after row to the server.  An alternative im
 
 \horrule{0.5pt}
 \section{Indexes}
-Selects, inserts and fetches have been described for indexes above.  Sorted column indexes are straightforward.  It remains to discuss the B+ Tree implementation.
+Selects, inserts and fetches have been described for indexes above.  Sorted column indexes are straightforward.  \textbf{An experiment will be done soon to determine the optimal fan-out / node size for the B+ trees.}
+
+\horrule{0.5pt}
+\section{Joins}
+Only hash joins have been implemented for now (nested joins are fairly trivial to implement).  These are implemented as follows: 
+\begin{enumerate}
+\item Insert all values from one select / fetch pair into a hashtable.
+\item Iterate over all values from the other select / fetch pair.  For each value and index:
+	\begin{itemize}
+	\item Retrieve all indices from the hashtable with a matching value.
+	\item Insert all indices into the first result handle.
+	\item Insert as many copies of the index into the second result handle.
+	\end{itemize}
+\end{enumerate}
+\textbf{A comparison of this method's performance with nested-loop joins will be done later.}
 
 \end{document}
