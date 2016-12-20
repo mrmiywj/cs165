@@ -281,10 +281,235 @@ void insertValueU(BTreeUNode** tree, int value, int index) {
     }
 }
 
+bool deleteValueParentU(BTreeUNode** tree, BTreeUParent* parent, int value, int index);
+bool deleteValueLeafU(BTreeUNode** tree, BTreeULeaf* leaf, int value, int index);
+
+bool deleteValueParentU(BTreeUNode** tree, BTreeUParent* parent, int value, int index) {
+    // find appropriate child node for this value
+    int i;
+    for (i = 0; i < (int) parent->num_children - 1; i++)
+        if (parent->dividers[i] > value)
+            break;
+    
+    // attempt to delete from child node
+    switch (parent->children[i]->type) {
+        case PARENT:
+            if (deleteValueParentU(tree, &(parent->children[i]->object.parent), value, index) == true)
+                return true;
+            else
+                break;
+        case LEAF:
+            if (deleteValueLeafU(tree, &(parent->children[i]->object.leaf), value, index) == true)
+                return true;
+            else
+                break;
+    }
+
+    // fall-through; subchild is under capacity, need to merge - find sibling
+    if (i > 0) {
+        BTreeUNode* sibling = parent->children[i - 1];
+        // check sibling capacity
+        switch (sibling->type) {
+            case PARENT: {
+                BTreeUParent* parent_sib = &(sibling->object.parent);
+                BTreeUParent* parent_orig = &(parent->children[i]->object.parent);
+                if (parent_sib->num_children <= CAPACITY) {
+                    // need to merge these two siblings; shift values over
+                    for (size_t j = 0; j < parent_orig->num_children; j++) {
+                        parent_sib->children[parent_sib->num_children + j] = parent_orig->children[j];
+                    }
+                    parent_sib->num_children += parent_orig->num_children;
+                    parent_sib->next = parent_orig->next;
+                    // remove original child parent
+                    for (size_t j = i; j < parent->num_children - 1; j++) {
+                        parent->children[j] = parent->children[j + 1];
+                        parent->dividers[j] = parent->dividers[j + 1];
+                    }
+                    parent->num_children--;
+                    parent->children[parent->num_children] = NULL;
+                    parent->dividers[parent->num_children] = 0;
+                } else {
+                    // shift all values in original over one to make space
+                    for (size_t j = parent_orig->num_children; j > 1; j--) {
+                        parent_orig->children[j] = parent_orig->children[j - 1];
+                        parent_orig->dividers[j - 1] = parent_orig->dividers[j - 2];
+                    }
+                    parent_orig->children[1] = parent_orig->children[0];
+                    // insert new value and divider from sibling
+                    parent_orig->children[0] = parent_sib->children[parent_sib->num_children - 1];
+                    parent_orig->dividers[0] = parent->dividers[i - 1];
+                    parent_sib->children[parent_sib->num_children - 1] = NULL;
+                    parent_sib->dividers[parent_sib->num_children - 2] = 0;
+                    parent_orig->num_children++;
+                    parent_sib->num_children--;
+                    // update parent divider
+                    parent->dividers[i - 1] = parent_sib->dividers[parent_sib->num_children - 2];
+                }
+                break;
+            }
+            case LEAF: {
+                BTreeULeaf* leaf_sib = &(sibling->object.leaf);
+                BTreeULeaf* leaf_orig = &(parent->children[i]->object.leaf);
+                if (leaf_sib->num_elements <= CAPACITY) {
+                    // need to merge these two siblings
+                    for (size_t j = 0; j < leaf_orig->num_elements - 1; j++)
+                        leaf_sib->values[leaf_sib->num_elements + j] = leaf_orig->values[j];
+                    leaf_sib->num_elements += leaf_orig->num_elements;
+                    leaf_sib->next = leaf_orig->next;
+                    // remove original child leaf
+                    for (size_t j = i; j < parent->num_children - 1; j++) {
+                        parent->children[j] = parent->children[j + 1];
+                        parent->dividers[j] = parent->dividers[j + 1];
+                    }
+                    parent->num_children--;
+                    parent->children[parent->num_children] = NULL;
+                    parent->dividers[parent->num_children] = 0;
+                } else {
+                    // shift all values in original over one to make space
+                    for (size_t j = leaf_orig->num_elements; j > 1; j--)
+                        leaf_orig->values[j] = leaf_orig->values[j - 1];
+                    // insert new value from sibling
+                    leaf_orig->values[0] = leaf_sib->values[leaf_sib->num_elements - 1];
+                    leaf_sib->values[leaf_sib->num_elements - 1] = 0;
+                    leaf_orig->num_elements++;
+                    leaf_sib->num_elements--;
+                    // update parent divider
+                    parent->dividers[i - 1] = leaf_orig->values[0];
+                }
+                break;
+            }
+        }
+    } else {
+        BTreeUNode* sibling = parent->children[i + 1];
+        // check sibling capacity
+        switch (sibling->type) {
+            case PARENT: {
+                BTreeUParent* parent_sib = &(sibling->object.parent);
+                BTreeUParent* parent_orig = &(parent->children[i]->object.parent);
+                if (parent_sib->num_children <= CAPACITY) {
+                    // need to merge these two siblings; shift values over
+                    for (size_t j = 0; j < parent_sib->num_children; j++) {
+                        parent_orig->children[parent_orig->num_children + j] = parent_sib->children[j];
+                    }
+                    parent_orig->num_children += parent_sib->num_children;
+                    parent_orig->next = parent_sib->next;
+                    // remove original child parent
+                    for (size_t j = i; j < parent->num_children - 1; j++) {
+                        parent->children[j] = parent->children[j + 1];
+                        parent->dividers[j] = parent->dividers[j + 1];
+                    }
+                    parent->num_children--;
+                    parent->children[parent->num_children] = NULL;
+                    parent->dividers[parent->num_children] = 0;
+                } else {
+                    // insert new value and divider from sibling
+                    parent_orig->children[parent_orig->num_children] = parent_sib->children[0];
+                    parent_orig->dividers[0] = parent->dividers[i - 1];
+                    // update parent dividers
+                    parent->dividers[i - 1] = parent_sib->dividers[0];
+                    // shift all values in sib over one to fill hole
+                    for (size_t j = 0; j < parent_sib->num_children - 1; j++) {
+                        parent_sib->children[j] = parent_sib->children[j + 1];
+                        parent_sib->dividers[j] = parent_sib->dividers[j + 1];
+                    }
+                    parent_sib->children[parent_sib->num_children - 1] = NULL;
+                    // update child counts
+                    parent_orig->num_children++;
+                    parent_sib->num_children--;
+                }
+                break;
+            }
+            case LEAF: {
+                BTreeULeaf* leaf_sib = &(sibling->object.leaf);
+                BTreeULeaf* leaf_orig = &(parent->children[i]->object.leaf);
+                if (leaf_sib->num_elements <= CAPACITY) {
+                    // need to merge these two siblings; shift values over
+                    for (size_t j = 0; j < leaf_sib->num_elements; j++) {
+                        leaf_orig->values[leaf_orig->num_elements + j] = leaf_sib->values[j];
+                    }
+                    leaf_orig->num_elements += leaf_sib->num_elements;
+                    leaf_orig->next = leaf_sib->next;
+                    // remove original child leaf
+                    for (size_t j = i; j < parent->num_children - 1; j++) {
+                        parent->children[j] = parent->children[j + 1];
+                        parent->dividers[j] = parent->dividers[j + 1];
+                    }
+                    parent->num_children--;
+                    parent->children[parent->num_children] = NULL;
+                    parent->dividers[parent->num_children] = 0;
+                } else {
+                    // insert new value from sibling
+                    leaf_orig->values[leaf_orig->num_elements] = leaf_sib->values[0];
+                    // shift all values in sib over one to fill hole
+                    for (size_t j = 0; j < leaf_sib->num_elements - 1; j++)
+                        leaf_sib->values[j] = leaf_sib->values[j + 1];
+                    leaf_sib->values[leaf_sib->num_elements - 1] = 0;
+                    // update parent dividers
+                    parent->dividers[i - 1] = leaf_sib->values[0];
+                    // update value counts
+                    leaf_orig->num_elements++;
+                    leaf_sib->num_elements--;
+                }
+                break;
+            }
+        }
+    }
+
+    // check the capacity of this parent if necessary
+    return parent->num_children >= CAPACITY;
+}
+bool deleteValueLeafU(BTreeUNode** tree, BTreeULeaf* leaf, int value, int index) {
+    size_t i;
+    // find first element >= value
+    for (i = 0; i < leaf->num_elements; i++)
+        if (leaf->values[i] >= value)
+            break;
+    
+    // search from this value onwards to find a 
+    for (size_t j = i; j < leaf->num_elements; j++) {
+        if (leaf->values[j] > value) 
+            break;
+        if (leaf->values[j] == value && leaf->indexes[j] == index) {
+            // delete this value
+            for (size_t k = j; k < leaf->num_elements - 1; k++) {
+                leaf->values[k] = leaf->values[k + 1];
+                leaf->indexes[k] = leaf->values[k + 1];
+            }
+            leaf->values[leaf->num_elements - 1] = 0;
+            leaf->indexes[leaf->num_elements - 1] = 0;
+            leaf->num_elements--;
+
+            // deleted value and index; need to shift all other indexes backward by 1
+            BTreeUNode* ptr = *tree;
+            while (ptr->type != LEAF) {
+                ptr = ptr->object.parent.children[0];
+            }
+            BTreeULeaf* leaf = &(ptr->object.leaf);
+            while (leaf != NULL) {
+                for (size_t i = 0; i < leaf->num_elements; i++)
+                    leaf->indexes[i] -= leaf->indexes[i] >= index;
+                leaf = leaf->next;
+            }
+        }
+    }
+    
+    return leaf->num_elements >= CAPACITY;
+}
+
 void deleteValueU(BTreeUNode** tree, int value, int index) {
-    (void) tree;
-    (void) value;
-    (void) index;
+    BTreeUNode* root = *tree;
+    // we don't care if the root has fewer than CAPACITY values/children
+    switch ((*tree)->type) {
+        case PARENT:
+            // unless there's only one child in the root now
+            if (deleteValueParentU(tree, &(root->object.parent), value, index) == false)
+                if (root->object.parent.num_children == 1)
+                    *tree = root->object.parent.children[0];
+            break;
+        case LEAF:
+            deleteValueLeafU(tree, &(root->object.leaf), value, index);
+            break;
+    }
 }
 void updateValueU(BTreeUNode** tree, int value, int index, int new_value) {
     deleteValueU(tree, value, index);
