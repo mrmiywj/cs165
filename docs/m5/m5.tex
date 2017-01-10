@@ -1,0 +1,29 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1.17in]{geometry}                
+\geometry{letterpaper}                  
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{hyperref, multicol}
+\hypersetup{colorlinks=true, allcolors=blue}
+\newcommand{\code}{\texttt}
+
+\begin{document}
+\begin{center}
+\textbf{Milestone 5 \\ CS165, Fall 2016 \\ Kevin Zhang}
+\end{center}
+
+\section{Goals}
+The goal of this milestone is to add update functionality to our database.  To do so, we need to implement deletion methods for our B+ trees.  Updates will be done by deleting the appropriate value-index pair from the tree first, then inserting the new index along with the value pair.  
+
+\section{Technical Description}
+Implementing deletion from our B+ trees is the hardest part of this milestone.  This will take significant debugging and tests to ensure everything is working.  Details of how deletion works are omitted, since B+ trees are fairly standard.
+\\\\Once we have deletion working, we'll implement updates based on the indexes that exist on the table in question.  If there is a clustered index, we need to update this first, then adjust the other columns and indexes to match.  Otherwise, we can simply replace the old values with the new values in each column, and delete the old values and insert the new values.
+\\\\We'll process every value that needs to be updated, one at a time.  This means that we'll update the indexes with one new value at a time, which may not be that efficient.  A better implementation would pre-calculate all the shifts that need to happen in the columns and indexes, but we did not have sufficient time to do so.
+
+\section{Evaluation}
+Not implemented yet!
+
+\section{Challenges \& Open Items}
+Haven't begun implementation yet.
+
+\end{document}

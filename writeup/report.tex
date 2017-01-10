@@ -134,7 +134,7 @@ Inserts without indexes are easy; we append to the end of the corresponding \ttt
 \item If none are found, append all values to the end of the table, then insert the new \ttt{(value, index)} pairs into each of the unclustered indices.
 \end{enumerate}
 
-The B+ tree implementation is critical for this portion of the project (and probably the most time-consuming).  The optimal parameters for B+ trees have yet to be determined; \textbf{an experiment will be conducted soon to determine optimal fanout/node size}.
+The B+ tree implementation is critical for this portion of the project (and probably the most time-consuming).  The optimal parameters for B+ trees have yet to be determined.
 
 \begin{center}
 \begin{tikzpicture}[node distance = 3cm, auto]
@@ -165,6 +165,26 @@ For batched selects, this behavior is slightly modified:
 \item Unclustered indexes: iterate down the index and build result arrays along the way.
 \end{itemize}
 For clustered indexes, we avoid leapfrogging between result arrays and instead write all values to each result array first.  This avoids some degree of random access.  For unclustered indexes, we avoid scanning the same data more than once and instead accumulate values as we go, avoiding multiple data scans but incurring costs from leapfrogging across result arrays instead.
+\\\\Normal queries took the following amounts of time (50000 tuples, run in background):
+\begin{table}[h!]
+\centering
+\begin{tabular}{c | c}
+Select \% & \# us \\
+9.1\% & 347 \\
+18.2 \% & 384 \\
+27.3 \% & 355 \\
+36.4 \% & 388 \\
+45.5 \% & 543 \\
+54.6 \% & 518 \\
+63.7 \% & 563 \\
+72.8 \% & 540 \\
+81.9 \% & 708 \\
+90.9 \% & 635 \\
+100 \% & 634
+\end{tabular}
+\end{table}
+
+In total, these queries run independently would take 5615 microseconds.  Batched queries were able to consistently complete these queries in under 5000 microseconds; we would likely see a larger margin of improvement with a very large number of queries.  The largest number of concurrent queries we can run depends on how much space we have available for results.
 
 \horrule{0.5pt}
 \section{Fetches}
@@ -176,7 +196,32 @@ Loads are done simply by sending row after row to the server.  An alternative im
 
 \horrule{0.5pt}
 \section{Indexes}
-Selects, inserts and fetches have been described for indexes above.  Sorted column indexes are straightforward.  \textbf{An experiment will be done soon to determine the optimal fan-out / node size for the B+ trees.}
+Selects, inserts and fetches have been described for indexes above.  Sorted column indexes are straightforward.  There was not enough time to perform experiments to determine the optimal fan out, but, based off calculations on the page size (assuming 64K) and struct size, the optimal number of values stored in each node is around 2700.
+\\\\We also recorded data on scan vs. index select performance.  Some of the results are shown below:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{c | c | c}
+Select \% & Scans & Indexes \\
+0 \% & 220 & 1 \\
+9.1 \% & 226 & 94 \\
+18.2 \% & 197 & 71 \\
+27.3 \% & 220 & 120 \\
+36.4 \% & 349 & 188 \\
+45.5 \% & 411 & 198 \\
+54.6 \% & 530 & 238 \\
+63.7 \% & 629 & 277 \\
+72.8 \% & 704 & 347 \\
+81.9 \% & 303 & 371 \\
+90.0 \% & 325 & 415 \\
+100.0 \% & 304 & 425
+\end{tabular}
+\caption{Runtime in milliseconds, 50000 tuples}
+\end{table}
+
+
+There is a clearly linear trend upwards for the indexes, while runtime seems to be mostly linear for scans up until around 80\% selectivity, when runtime drops again.  This is expected; runtime for indexes are dependent entirely on the number of values that need to be saved.  Scans are a bit more complex; deciding whether a value needs to be saved or not requires a branch, which can result in very slow behavior when values are randomly distributed and are close to 50\% selectivity.  This is what we see in our data; runtime increases up but then drops when branching behavior becomes more consistent.
+\\\\Overall, indexes seem to perform better for lower selectivities, as expected.
 
 \horrule{0.5pt}
 \section{Joins}
@@ -190,6 +235,7 @@ Only hash joins have been implemented for now (nested joins are fairly trivial t
 	\item Insert as many copies of the index into the second result handle.
 	\end{itemize}
 \end{enumerate}
-\textbf{A comparison of this method's performance with nested-loop joins will be done later.}
+
+Again, there was not enough time to compare hash join performance with that of nested loops, but it seems reasonable to assume that, for low selectivities, hash joins are much more efficient than nested loop joins.  Experiments would be required to determine an exact boundary as a function of the \% selectivity and number of tuples.
 
 \end{document}

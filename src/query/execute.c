@@ -757,7 +757,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             }
 
             gettimeofday(&stop, NULL);
-            log_info("-- Select query using %s %s index took %lu milliseconds.  %i out of %i tuples.\n", 
+            printf("-- Select query using %s %s index took %lu milliseconds.  %i out of %i tuples.\n", 
                 index->clustered ? "clustered" : "unclustered",
                 index->type == BTREE ? "BTREE" : "SORTED",
                 1000000 * (stop.tv_sec - start.tv_sec) + stop.tv_usec - start.tv_usec,
@@ -796,7 +796,7 @@ char* handleSelectQuery(DbOperator* query, message* send_message) {
             new_pointer.result->num_tuples = num_inserted;
 
             gettimeofday(&stop, NULL);
-            log_info("-- Select query using scan took %lu milliseconds.  %i out of %i tuples.\n", 
+            printf("-- Select query using scan took %lu milliseconds.  %i out of %i tuples.\n", 
                 1000000 * (stop.tv_sec - start.tv_sec) + stop.tv_usec - start.tv_usec, 
                 num_inserted,
                 table->num_rows);
@@ -1306,7 +1306,8 @@ char* handleBatchSelectQuery(BatchedQueries* queries, message* send_message) {
     for (size_t i = 0; i < queries->table->num_indexes; i++)
         index = queries->table->indexes[i]->column == column ? queries->table->indexes[i] : index;
     
-    if (index != NULL) {
+    // if (index != NULL) {
+    if (false) {
         // use index to search for valid values
         switch (index->type) {
             case BTREE:
@@ -1335,6 +1336,9 @@ char* handleBatchSelectQuery(BatchedQueries* queries, message* send_message) {
                 break;
         }
     } else {
+        struct timeval start, stop;
+        gettimeofday(&start, NULL);
+
         // scan through column and store all data in tuples
         int num_tuples[queries->num_queries];
         int capacities[queries->num_queries];
@@ -1373,6 +1377,10 @@ char* handleBatchSelectQuery(BatchedQueries* queries, message* send_message) {
             queries->results[i]->data_type = INT;
             queries->results[i]->num_tuples = num_tuples[i];
         }
+
+        gettimeofday(&stop, NULL);
+        printf("-- Batch select scan query took %lu milliseconds.\n", 
+            1000000 * (stop.tv_sec - start.tv_sec) + stop.tv_usec - start.tv_usec);
     }
 
     send_message->status = OK_DONE;
